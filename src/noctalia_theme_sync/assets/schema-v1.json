@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:noctalia:theme-sync:v1",
+  "title": "Theme Sync v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "revision",
+    "generated_at",
+    "mode",
+    "wallpaper",
+    "colors"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "type": "integer"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "mode": {
+      "enum": [
+        "dark",
+        "light"
+      ]
+    },
+    "wallpaper": {
+      "type": "string",
+      "pattern": "^(/[^\\u0000]*|)$"
+    },
+    "colors": {
+      "type": "object",
+      "required": [
+        "primary",
+        "on_primary",
+        "primary_container",
+        "on_primary_container",
+        "secondary",
+        "on_secondary",
+        "secondary_container",
+        "on_secondary_container",
+        "tertiary",
+        "on_tertiary",
+        "tertiary_container",
+        "on_tertiary_container",
+        "surface",
+        "on_surface",
+        "surface_variant",
+        "on_surface_variant",
+        "surface_dim",
+        "surface_bright",
+        "surface_container_lowest",
+        "surface_container_low",
+        "surface_container",
+        "surface_container_high",
+        "surface_container_highest",
+        "outline",
+        "outline_variant",
+        "error",
+        "on_error",
+        "error_container",
+        "on_error_container",
+        "inverse_surface",
+        "inverse_on_surface",
+        "inverse_primary",
+        "background",
+        "on_background",
+        "shadow",
+        "scrim",
+        "primary_fixed",
+        "primary_fixed_dim",
+        "on_primary_fixed",
+        "on_primary_fixed_variant",
+        "secondary_fixed",
+        "secondary_fixed_dim",
+        "on_secondary_fixed",
+        "on_secondary_fixed_variant",
+        "tertiary_fixed",
+        "tertiary_fixed_dim",
+        "on_tertiary_fixed",
+        "on_tertiary_fixed_variant"
+      ],
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^#[0-9a-fA-F]{6}$"
+      }
+    },
+    "wallpaper_asset": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "id",
+            "url",
+            "filename",
+            "content_type",
+            "size"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "url": {
+              "const": "/v1/wallpaper/current"
+            },
+            "filename": {
+              "type": "string"
+            },
+            "content_type": {
+              "enum": [
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+                "image/gif"
+              ]
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 67108864
+            }
+          }
+        }
+      ]
+    }
+  }
+}

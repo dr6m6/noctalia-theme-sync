@@ -1,0 +1,50 @@
+[
+  {
+    "path": "src/noctalia_theme_sync/assets/adapters/gtk3.css",
+    "upstream": "https://github.com/noctalia-dev/noctalia",
+    "commit": "8240b170dbbbf47b231170a795b24ae9ac7923f6",
+    "upstream_path": "assets/templates/gtk/gtk3.css",
+    "license": "MIT",
+    "sha256": "0f24b7350ffc2d483822966b3625d38135b8f15b7dee9fb5a49fd0484dd40db2"
+  },
+  {
+    "path": "src/noctalia_theme_sync/assets/adapters/gtk4.css",
+    "upstream": "https://github.com/noctalia-dev/noctalia",
+    "commit": "8240b170dbbbf47b231170a795b24ae9ac7923f6",
+    "upstream_path": "assets/templates/gtk/gtk4.css",
+    "license": "MIT",
+    "sha256": "3deac341f68de9c09a25ddb46438574ffdb0d6dad59427aa03fc86bf457c9893"
+  },
+  {
+    "path": "src/noctalia_theme_sync/assets/adapters/qt.conf",
+    "upstream": "https://github.com/noctalia-dev/noctalia",
+    "commit": "8240b170dbbbf47b231170a795b24ae9ac7923f6",
+    "upstream_path": "assets/templates/qt/qtct.conf",
+    "license": "MIT",
+    "sha256": "a5218435fd15ab575f1c189c6ae4924bc98614e58ee214a90622a96b417d4add"
+  },
+  {
+    "path": "src/noctalia_theme_sync/assets/adapters/kitty.conf",
+    "upstream": "https://github.com/noctalia-dev/noctalia",
+    "commit": "8240b170dbbbf47b231170a795b24ae9ac7923f6",
+    "upstream_path": "assets/templates/kitty/kitty.conf",
+    "license": "MIT",
+    "sha256": "481396bbaa257397cfafcaa26029f2455556d21e59f96ac8f866e630ed64ce4c"
+  },
+  {
+    "path": "src/noctalia_theme_sync/assets/adapters/btop.theme",
+    "upstream": "https://github.com/noctalia-dev/noctalia",
+    "commit": "8240b170dbbbf47b231170a795b24ae9ac7923f6",
+    "upstream_path": "assets/templates/btop/btop.theme",
+    "license": "MIT",
+    "sha256": "033f78b2c329868641fed818ad8d7070412a7f01055bc3b0dce0558371a05c9a"
+  },
+  {
+    "path": "src/noctalia_theme_sync/assets/adapters/cava.ini",
+    "upstream": "https://github.com/noctalia-dev/noctalia",
+    "commit": "8240b170dbbbf47b231170a795b24ae9ac7923f6",
+    "upstream_path": "assets/templates/cava/cava.ini",
+    "license": "MIT",
+    "sha256": "e647f9d50e52d77175094115259c014bae588d2e6a38bc2114be61ba4a8366b6"
+  }
+]

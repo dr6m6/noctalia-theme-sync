@@ -1,0 +1,20 @@
+{
+  "id": "firefox",
+  "status": "supported",
+  "commands": [
+    "firefox"
+  ],
+  "detect": [],
+  "outputs": [
+    {
+      "template": "firefox-colors.txt",
+      "path": "cache/wal/colors.json"
+    }
+  ],
+  "dependencies": [
+    "Pywalfox extension",
+    "Noctalia native Firefox host (noctalia firefox-theme install)"
+  ],
+  "reload": "auto",
+  "limitations": "Enable Pywalfox and install the native host yourself. No profile, userChrome or extension modifications by this project. Shared wal output requires --adopt-existing."
+}

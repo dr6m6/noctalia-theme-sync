@@ -1,0 +1,21 @@
+{
+  "id": "vesktop",
+  "status": "experimental",
+  "commands": [
+    "vesktop"
+  ],
+  "detect": [
+    "config/vesktop/settings.json"
+  ],
+  "outputs": [
+    {
+      "template": "vesktop.css",
+      "path": "config/vesktop/themes/noctalia-theme-sync.theme.css"
+    }
+  ],
+  "dependencies": [
+    "Vesktop/Vencord local themes"
+  ],
+  "reload": "auto",
+  "limitations": "Enable the local theme in Vencord UI. Discord selectors may change. No remote CSS import or Electron debugging."
+}

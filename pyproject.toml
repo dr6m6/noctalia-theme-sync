@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noctalia-theme-sync"
+version = "0.1.0"
+description = "Safe, per-user Noctalia v5 palette synchronization and optional local JSON/SSE bridge"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE", "licenses/*.txt"]
+authors = [{name = "noctalia-theme-sync contributors"}]
+dependencies = []
+
+[project.scripts]
+noctalia-theme-sync = "noctalia_theme_sync.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+noctalia_theme_sync = ["assets/*", "assets/adapters/*"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

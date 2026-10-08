@@ -1,0 +1,21 @@
+{
+  "id": "tmux",
+  "status": "supported",
+  "commands": [
+    "tmux"
+  ],
+  "detect": [
+    "config/tmux/tmux.conf"
+  ],
+  "outputs": [
+    {
+      "template": "tmux.conf",
+      "path": "config/tmux/themes/noctalia-theme-sync.conf"
+    }
+  ],
+  "dependencies": [
+    "tmux"
+  ],
+  "reload": "auto",
+  "limitations": "Reload only the default owned server; custom sockets require manual source-file. Existing startup configs must source XDG tmux.conf."
+}

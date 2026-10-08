@@ -1,0 +1,12 @@
+/* Optional native Material-Theme import; installation is manual. */
+:root {
+  --md-sys-color-primary: {{ colors.primary.default.hex }};
+  --md-sys-color-on-primary: {{ colors.on_primary.default.hex }};
+  --md-sys-color-surface: {{ colors.surface.default.hex }};
+  --md-sys-color-on-surface: {{ colors.on_surface.default.hex }};
+  --md-sys-color-surface-container: {{ colors.surface_container.default.hex }};
+  --md-sys-color-surface-container-low: {{ colors.surface_container_low.default.hex }};
+  --md-sys-color-secondary: {{ colors.secondary.default.hex }};
+  --md-sys-color-on-secondary: {{ colors.on_secondary.default.hex }};
+  --md-sys-color-outline: {{ colors.outline.default.hex }};
+}

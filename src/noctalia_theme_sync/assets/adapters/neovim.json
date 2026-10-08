@@ -1,0 +1,19 @@
+{
+  "id": "neovim",
+  "status": "supported",
+  "commands": [
+    "nvim"
+  ],
+  "detect": [],
+  "outputs": [
+    {
+      "template": "neovim.lua",
+      "path": "config/nvim/colors/noctalia.lua"
+    }
+  ],
+  "dependencies": [
+    "Neovim"
+  ],
+  "reload": "manual",
+  "limitations": "Add colorscheme noctalia to init yourself; existing sessions require :colorscheme noctalia."
+}

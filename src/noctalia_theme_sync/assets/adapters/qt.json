@@ -1,0 +1,27 @@
+{
+  "id": "qt",
+  "status": "supported",
+  "commands": [
+    "qt6ct",
+    "qt5ct"
+  ],
+  "detect": [
+    "config/qt6ct/qt6ct.conf"
+  ],
+  "outputs": [
+    {
+      "template": "qt.conf",
+      "path": "config/qt5ct/colors/noctalia-theme-sync.conf"
+    },
+    {
+      "template": "qt.conf",
+      "path": "config/qt6ct/colors/noctalia-theme-sync.conf"
+    }
+  ],
+  "dependencies": [
+    "qt5ct or qt6ct",
+    "QT_QPA_PLATFORMTHEME matching qt5ct/qt6ct"
+  ],
+  "reload": "restart",
+  "limitations": "Requires qtct platform theme; KDE applications may use a different palette system."
+}

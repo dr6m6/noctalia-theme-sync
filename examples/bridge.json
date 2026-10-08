@@ -1,0 +1,7 @@
+{
+  "bind": "127.0.0.1",
+  "port": 8765,
+  "trusted_loopback": true,
+  "debounce_ms": 250,
+  "wallpaper_roots": []
+}

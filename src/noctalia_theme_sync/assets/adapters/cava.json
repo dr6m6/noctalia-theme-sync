@@ -1,0 +1,19 @@
+{
+  "id": "cava",
+  "status": "supported",
+  "commands": [
+    "cava"
+  ],
+  "detect": [],
+  "outputs": [
+    {
+      "template": "cava.ini",
+      "path": "config/cava/themes/noctalia-theme-sync"
+    }
+  ],
+  "dependencies": [
+    "cava"
+  ],
+  "reload": "manual",
+  "limitations": "Cava colors file is configured; optional reload sends SIGUSR1 to owned cava processes."
+}

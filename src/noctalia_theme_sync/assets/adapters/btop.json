@@ -1,0 +1,19 @@
+{
+  "id": "btop",
+  "status": "supported",
+  "commands": [
+    "btop"
+  ],
+  "detect": [],
+  "outputs": [
+    {
+      "template": "btop.theme",
+      "path": "config/btop/themes/noctalia-theme-sync.theme"
+    }
+  ],
+  "dependencies": [
+    "btop"
+  ],
+  "reload": "restart",
+  "limitations": "Restart or reselect the theme in the options menu."
+}

@@ -1,0 +1,18 @@
+This is an independent community project, not an official Noctalia product.
+
+GTK3, GTK4, Qt, Kitty, btop and cava color templates are redistributed from
+noctalia-dev/noctalia, commit 8240b170dbbbf47b231170a795b24ae9ac7923f6 (v5.2.1).
+Copyright (c) 2026 noctalia-dev. MIT license: licenses/Noctalia-MIT.txt.
+Exact source paths and hashes are listed in licenses/provenance.json.
+Noctalia itself is an external dependency and is not bundled.
+
+The bridge, palette publisher, Neovim and tmux projections were extracted from
+the project owner's local theme-sync implementation. Product lifecycle code,
+tests, documentation and small experimental native-format projections are
+project code under LICENSE.
+
+Community templates without verified redistribution licenses, Material Discord
+base CSS, Telegram account data, icon artwork, Firefox profiles, NixOS personal
+modules and desktop wallpapers are not redistributed. Pywalfox, Vencord,
+Millennium, Material-Theme and adw-gtk3 are separate dependencies with their
+own licenses. No binary patches or external CSS downloads are included.

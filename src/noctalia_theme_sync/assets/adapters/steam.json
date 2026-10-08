@@ -1,0 +1,20 @@
+{
+  "id": "steam",
+  "status": "experimental",
+  "commands": [
+    "steam"
+  ],
+  "detect": [],
+  "outputs": [
+    {
+      "template": "steam.css",
+      "path": "data/Steam/millennium/themes/Material-Theme/css/main/colors/noctalia-theme-sync.css"
+    }
+  ],
+  "dependencies": [
+    "Millennium",
+    "Material-Theme installed separately"
+  ],
+  "reload": "manual",
+  "limitations": "Explicit CSS import in an already installed compatible Material-Theme required. No Steam binary/launcher/theme downloader."
+}

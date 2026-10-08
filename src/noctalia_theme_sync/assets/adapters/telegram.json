@@ -1,0 +1,20 @@
+{
+  "id": "telegram",
+  "status": "experimental",
+  "commands": [
+    "Telegram",
+    "telegram-desktop"
+  ],
+  "detect": [],
+  "outputs": [
+    {
+      "template": "telegram.theme",
+      "path": "config/telegram-desktop/themes/noctalia-theme-sync.tdesktop-theme"
+    }
+  ],
+  "dependencies": [
+    "Telegram Desktop"
+  ],
+  "reload": "restart",
+  "limitations": "Import file in native GUI once. Compact native role mapping; no tdata access, no automatic restart."
+}

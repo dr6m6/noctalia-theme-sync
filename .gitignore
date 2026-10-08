@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ruff_cache/
+.pytest_cache/
+result
+result-*
+build/
+dist/
+.coverage
+*.log
+.env
+.env.*
+local/
+private/
+backups/
+*.bak
+*token*
+# Never commit desktop state, profiles, wallpaper or evidence archives.
+current.json
+bridge-last-valid.json
+installation.json
+pending.json
+*.sqlite*
+*.tdesktop-theme

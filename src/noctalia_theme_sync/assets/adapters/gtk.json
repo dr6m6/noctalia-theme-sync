@@ -1,0 +1,25 @@
+{
+  "id": "gtk",
+  "status": "supported",
+  "commands": [
+    "gtk-launch"
+  ],
+  "detect": [
+    "config/gtk-3.0/settings.ini"
+  ],
+  "outputs": [
+    {
+      "template": "gtk3.css",
+      "path": "config/gtk-3.0/noctalia-theme-sync.css"
+    },
+    {
+      "template": "gtk4.css",
+      "path": "config/gtk-4.0/noctalia-theme-sync.css"
+    }
+  ],
+  "dependencies": [
+    "adw-gtk3 for GTK3"
+  ],
+  "reload": "restart",
+  "limitations": "GTK4/libadwaita CSS definitions; app-specific overrides and older GTK may differ. No portal preference toggling."
+}

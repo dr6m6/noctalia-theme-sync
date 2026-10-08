@@ -1,0 +1,21 @@
+{
+  "id": "kitty",
+  "status": "supported",
+  "commands": [
+    "kitty"
+  ],
+  "detect": [
+    "config/kitty/kitty.conf"
+  ],
+  "outputs": [
+    {
+      "template": "kitty.conf",
+      "path": "config/kitty/themes/noctalia-theme-sync.conf"
+    }
+  ],
+  "dependencies": [
+    "Kitty"
+  ],
+  "reload": "manual",
+  "limitations": "Reload config with Ctrl+Shift+F5; optional reload sends SIGUSR1 to owned Kitty processes."
+}
