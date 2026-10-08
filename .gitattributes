@@ -1,0 +1,3 @@
+# Keep these upstream MIT templates byte-for-byte for provenance and parity.
+src/noctalia_theme_sync/assets/adapters/gtk4.css -whitespace
+src/noctalia_theme_sync/assets/adapters/cava.ini -whitespace
