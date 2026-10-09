@@ -22,13 +22,26 @@ def manifest_path():
     return xdg.state() / 'installation.json'
 
 
+class Manifest(dict):
+    """In-memory read precondition; never serialized into installation state."""
+
+    signature = None
+
+
 def load():
     data = xdg.read(manifest_path())
     if data is None:
-        return {'version': 1, 'adapters': [], 'files': {}, 'consume_existing': False, 'bridge': False}
+        m = Manifest(version=1, adapters=[], files={}, consume_existing=False, bridge=False)
+        m.signature = {'sha256': None, 'mode': None}
+        return m
     m = json.loads(data)
-    if m.get('version') != 1 or not isinstance(m.get('files'), dict):
+    if (not isinstance(m, dict) or m.get('version') != 1 or not isinstance(m.get('files'), dict)
+            or not all(isinstance(p, str) and isinstance(e, dict) for p, e in m['files'].items())):
         raise ValueError('unsupported installation manifest')
+    m = Manifest(m)
+    m.signature = xdg.signature(manifest_path())
+    if m.signature['sha256'] != xdg.digest(data):
+        raise ValueError('manifest changed while reading')
     return m
 
 
@@ -63,6 +76,8 @@ def check(m, path):
 
 def commit(m, changes, registrations=None, modes=None, forget=(), expected=None):
     """Preflight everything, save journal, write files, then commit ownership."""
+    if getattr(m, 'signature', None) is not None and xdg.signature(manifest_path()) != m.signature:
+        raise ValueError('manifest changed before transaction')
     if expected is not None:
         from .adoption import signature
         if any(signature(path) != value for path, value in expected.items()):
@@ -86,22 +101,32 @@ def commit(m, changes, registrations=None, modes=None, forget=(), expected=None)
             m['files'][path]['installed_sha256'] = xdg.digest(data)
             m['files'][path]['installed_mode'] = modes.get(path, snapshots[path]['mode']) if data is not None else None
     old_manifest = xdg.read(manifest_path())
-    journal = {'before': snapshots, 'after': {p: xdg.digest(changes.get(p, decode(v['data']))) for p, v in snapshots.items()},
-               'manifest': encode(old_manifest)}
+    for path in forget:
+        m['files'].pop(path, None)
+    new_manifest = (json.dumps(m, indent=2) + '\n').encode()
+    old_manifest_signature = xdg.signature(manifest_path())
+    if old_manifest_signature['sha256'] != xdg.digest(old_manifest):
+        raise ValueError('manifest changed before journal')
+    journal = {'version': 2, 'before': snapshots,
+               'after': {p: xdg.digest(changes.get(p, decode(v['data']))) for p, v in snapshots.items()},
+               'after_modes': {p: modes.get(p, v['mode']) if changes.get(p, decode(v['data'])) is not None else None
+                               for p, v in snapshots.items()},
+               'manifest': encode(old_manifest), 'manifest_before': old_manifest_signature,
+               'manifest_after': {'sha256': xdg.digest(new_manifest), 'mode': 0o600}}
     pending = xdg.state() / 'pending.json'
     xdg.write(pending, (json.dumps(journal) + '\n').encode())
     try:
         for path, data in changes.items():
-            if xdg.digest(xdg.read(path)) != xdg.digest(decode(snapshots[path]['data'])):
-                raise ValueError('configuration changed during transaction: ' + path)
-            xdg.write(path, data, modes.get(path, snapshots[path]['mode']))
-        for path in forget:
-            m['files'].pop(path, None)
-        xdg.write(manifest_path(), (json.dumps(m, indent=2) + '\n').encode())
+            expected_signature = {'sha256': xdg.digest(decode(snapshots[path]['data'])),
+                                  'mode': snapshots[path]['mode'] if snapshots[path]['data'] is not None else None}
+            xdg.write(path, data, modes.get(path, snapshots[path]['mode']), expected=expected_signature)
+        xdg.write(manifest_path(), new_manifest, expected=old_manifest_signature)
     except BaseException:
         recover()
         raise
     xdg.write(pending, None)
+    if isinstance(m, Manifest):
+        m.signature = journal['manifest_after']
     return m
 
 
@@ -111,12 +136,33 @@ def recover():
     if data is None:
         return False
     j = json.loads(data)
+    if not isinstance(j, dict) or not isinstance(j.get('before'), dict) or set(j['before']) != set(j.get('after', {})):
+        raise ValueError('invalid recovery journal targets')
+    if any(not isinstance(v, dict) or type(v.get('mode')) is not int or not 0 <= v['mode'] <= 0o777
+           for v in j['before'].values()):
+        raise ValueError('invalid recovery journal permissions')
+    if j.get('version', 1) not in (1, 2):
+        raise ValueError('unsupported recovery journal')
+    if j.get('version') == 2 and set(j.get('after_modes', {})) != set(j['before']):
+        raise ValueError('invalid recovery journal modes')
+    observed = {}
     for path, before in j['before'].items():
-        current = xdg.digest(xdg.read(path))
-        if current not in (xdg.digest(decode(before['data'])), j['after'][path]):
+        current = xdg.signature(path)
+        original = {'sha256': xdg.digest(decode(before['data'])),
+                    'mode': before['mode'] if before['data'] is not None else None}
+        # Legacy journals cannot prove a changed mode; ambiguity must fail closed.
+        after = {'sha256': j['after'][path],
+                 'mode': j.get('after_modes', {}).get(path, before['mode']) if j['after'][path] is not None else None}
+        if current not in (original, after):
             raise ValueError('recovery stopped to preserve an external edit: ' + path)
+        observed[path] = current
+    manifest_current = xdg.signature(manifest_path())
+    manifest_before = j.get('manifest_before', {'sha256': xdg.digest(decode(j['manifest'])),
+                                               'mode': 0o600 if j['manifest'] is not None else None})
+    if manifest_current not in (manifest_before, j.get('manifest_after', manifest_before)):
+        raise ValueError('recovery stopped to preserve an external manifest edit')
     for path, before in j['before'].items():
-        xdg.write(path, decode(before['data']), before['mode'])
-    xdg.write(manifest_path(), decode(j['manifest']))
+        xdg.write(path, decode(before['data']), before['mode'], expected=observed[path])
+    xdg.write(manifest_path(), decode(j['manifest']), manifest_before['mode'] or 0o600, expected=manifest_current)
     xdg.write(pending, None)
     return True

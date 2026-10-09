@@ -1,5 +1,13 @@
 # Controlled adoption
 
+Recovery journals bind both content and permissions, including the ownership
+manifest before/after publication. Unknown edits retain the journal and stop
+recovery. Legacy journals cannot prove a changed mode or a new manifest;
+ambiguous states fail closed. Atomic deletion also fsyncs its parent directory.
+Writes recheck expected content/mode after the temporary file is fsynced.
+This narrows races but is not an OS compare-and-swap with arbitrary external
+editors; stop competing writers and keep private state private during adoption.
+
 An existing desktop can contain custom templates, hooks, native theme selections,
 wrappers and runtime patches that these adapters do not reproduce. File generation
 tests do not establish visual or live reload parity. Preserve those integrations
