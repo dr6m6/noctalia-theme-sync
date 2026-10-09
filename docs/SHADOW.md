@@ -66,6 +66,9 @@ The interactive TUI uses your terminal but changes only its own temporary Neovim
 session. It has a 1-second timer that accepts output bytes only when they match
 the private ownership manifest's SHA256/mode, then refreshes its temporary copy.
 Unknown edits retain the last accepted theme. No user init/plugins are loaded.
+The built-in preview isolates the environment, not the whole filesystem or
+network namespace; it trusts the selected native `nvim` executable. Use a Linux
+namespace sandbox for an untrusted executable or separate plugin-stack checks.
 
 For another one-shot fixture:
 
@@ -181,3 +184,5 @@ test dependencies, not shadow runtime dependencies. Keep captures outside Git.
 These checks use shipped native syntax, not the user's plugins/Treesitter/UI.
 Pixel parity in the isolated sample is evidence for the theme renderer, not
 acceptance of an existing production Neovim session or all terminal frontends.
+See [v0.3.0 acceptance scope](VALIDATION-v0.3.0.md) for the independently isolated
+personal watcher, native UI, installed Tree-sitter parsers and foreground SSE check.

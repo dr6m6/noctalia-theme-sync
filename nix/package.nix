@@ -1,7 +1,7 @@
 { lib, python3Packages }:
 python3Packages.buildPythonApplication {
   pname = "noctalia-theme-sync";
-  version = "0.2.1";
+  version = "0.3.0";
   pyproject = true;
   src = lib.cleanSourceWith {
     src = ../.;

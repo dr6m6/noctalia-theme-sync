@@ -1,10 +1,22 @@
 # Changelog
 
-## Unreleased
+## v0.3.0
 
+- Add controlled adoption with publisher/writer inventory, normalized output
+  aliases and checksum-bound reviewed plans. Existing generated outputs require
+  explicit adoption; conflicts and unknown edits are never force-overwritten.
 - Add opt-in Neovim Shadow Mode with a private output, checksum-bound plans,
   isolated previews, existing transaction rollback and foreground SSE delivery
   through an already running bridge. No personal writers/hooks are disabled.
+- Harden interrupted transactions: bind file and manifest content/permissions,
+  preserve foreign edits, reject stale ownership state and fsync deletions.
+  Legacy journals with ambiguous states fail closed; recovery is not a global
+  filesystem snapshot or a compare-and-swap with external editors.
+- Validate private roots and bearer-token files, reject header injection without
+  leaking token values, and make screenshot mismatches fail the visual gate.
+- Document preview versus adoption, live-delivery limits, rollback and the
+  isolated native Neovim/Tree-sitter/UI acceptance scope. Shadow remains explicit
+  opt-in: normal installation creates no shadow output or consumer service.
 
 ## v0.2.1
 
