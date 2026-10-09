@@ -335,6 +335,27 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog='noctalia-theme-sync', description=__doc__)
     parser.add_argument('--version', action='version', version=__version__)
     sub = parser.add_subparsers(dest='command', required=True)
+    shadow_parser = sub.add_parser('shadow', help='private Neovim preview, no production activation')
+    actions = shadow_parser.add_subparsers(dest='shadow_command', required=True)
+    for action in ('plan', 'install', 'apply', 'test', 'status', 'uninstall', 'rollback', 'watch'):
+        p = actions.add_parser(action)
+        p.add_argument('--root', required=True, help='absolute private root, separate from production integrations')
+        p.add_argument('--palette', help='canonical v1 JSON (read only); defaults to existing current.json')
+        p.set_defaults(from_plan=None, write_plan=None, dry_run=False)
+        if action in ('plan', 'install', 'apply'):
+            p.add_argument('--write-plan')
+            p.add_argument('--from-plan')
+            p.add_argument('--dry-run', action='store_true')
+        if action in ('uninstall', 'rollback'):
+            p.add_argument('--dry-run', action='store_true')
+        if action == 'rollback':
+            p.add_argument('--recover', action='store_true')
+        if action == 'test':
+            p.add_argument('--interactive', action='store_true', help='temporary isolated TUI; no default theme change')
+        if action == 'watch':
+            p.add_argument('--events', required=True, help='existing numeric loopback bridge /v1/events URL')
+            p.add_argument('--token-file', help='optional private existing bridge bearer token file')
+            p.add_argument('--max-events', type=int, help='bounded foreground verification; otherwise run until stopped')
     sub.add_parser('doctor')
     sub.add_parser('list')
     sub.add_parser('status')
@@ -373,8 +394,16 @@ def main(argv=None):
     p.add_argument('--dry-run', action='store_true')
     args = parser.parse_args(argv)
     try:
+        if args.command == 'shadow':
+            from .shadow import dispatch as shadow_dispatch
+            emit(shadow_dispatch(args))
+            return 0
+        if tx.load().get('shadow'):
+            raise ValueError('shadow state requires shadow commands; normal activation refused')
         with native.installation_context(tx.load()):
             return dispatch(args)
+    except KeyboardInterrupt:
+        return 130
     except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
         print('noctalia-theme-sync: ' + str(exc), file=sys.stderr)
         return 1

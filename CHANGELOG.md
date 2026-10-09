@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add opt-in Neovim Shadow Mode with a private output, checksum-bound plans,
+  isolated previews, existing transaction rollback and foreground SSE delivery
+  through an already running bridge. No personal writers/hooks are disabled.
+
 ## v0.2.1
 
 - Make bridge inotify/SSE tests wait for completed reloads rather than assuming

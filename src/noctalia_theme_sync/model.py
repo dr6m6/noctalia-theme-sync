@@ -31,6 +31,11 @@ def paths():
 def read_json(path):
     with Path(path).open('rb') as stream:
         data = stream.read(MAX_JSON + 1)
+    return parse_json(data)
+
+
+def parse_json(data):
+    """Bounded JSON contract decoding for files and SSE frames."""
     if len(data) > MAX_JSON:
         raise ValueError('JSON exceeds 64 KiB')
     def unique(pairs):

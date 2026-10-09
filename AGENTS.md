@@ -5,6 +5,12 @@ only palette source; the optional bridge is local HTTP/SSE, not a producer.
 
 ## Inspect and install
 
+For an existing personal Neovim integration, route safe previews through
+`shadow plan/install/test/status/watch/uninstall` (docs/SHADOW.md). Keep the old
+writer and output; shadow uses a distinct private root. Do not edit Noctalia
+fragments or run global templates-apply for a shadow trial. Persistent consumer
+services and production session selection require separate authorization.
+
 1. Read README, docs/INSTALL.md and docs/ADAPTERS.md. Identify the user's OS,
    Python (`>=3.11`), `noctalia --version`, XDG environment and actual installed apps.
 2. Run `./bin/noctalia-theme-sync doctor` and `list`. Select requested adapters,

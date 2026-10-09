@@ -226,6 +226,13 @@ Fastfetch обновляется при следующем запуске; Codex
 Codex experimental: меняется только тема подсветки, pet и аккаунт не затрагиваются.
 Проект не меняет `/etc/nixos`, compositor, аккаунты и профили.
 
+## Safe previews for an existing integration
+
+For a running personal Neovim theme, use the opt-in [Shadow Mode](docs/SHADOW.md)
+to render a distinct private output and launch an isolated preview. It retains
+the personal writer and Noctalia hooks. Optional foreground SSE delivery consumes
+the existing bridge; installation creates no service or default theme selection.
+
 ## License
 
 MIT for project code. The redistributed Noctalia templates retain their MIT
