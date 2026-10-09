@@ -56,3 +56,13 @@ controlled. The existing local fork/pet patches are not product dependencies.
 Visual acceptance covers the demonstrated versions only. Native queries prove
 preview terminal state; they do not inspect every pre-existing terminal window.
 Personal Braille artwork/animation wrappers were not redistributed or replaced.
+
+## v0.2.1 CI stabilization
+
+The v0.2.0 main workflow passed all jobs. Its separate tag workflow exposed an
+existing test race: checking an SSE queue after a fixed 250 ms pause, before a
+slow runner completed the background atomic fsync. The patch waits for an actual
+completed inotify reload with a bounded timeout, and groups coalescing writes in
+one uninterrupted burst. No adapter/bridge runtime code or visual theme changed.
+A slow-cache-write regression deliberately exceeds the former pause; the patch
+suite contains 45 tests. v0.2.1 is the recommended release; the tag history remains immutable.

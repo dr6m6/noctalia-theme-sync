@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -49,8 +50,14 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         body = await asyncio.wait_for(r.read(), 2)
         return status, body
 
-    async def settle(self):
-        await asyncio.sleep(.25)
+    async def settle(self, bridge=None):
+        # Wait for a real completed inotify reload, not a guessed fsync duration.
+        bridge = bridge or self.bridge
+        previous = bridge.last_check
+        async def completed():
+            while bridge.last_check == previous or bridge.pending is not None or bridge.reload_tasks:
+                await asyncio.sleep(.01)
+        await asyncio.wait_for(completed(), 5)
 
     async def event(self, reader):
         async def read():
@@ -76,7 +83,8 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         self.bridge.clients.add(q)
         for rev in (2, 3, 4):
             atomic_json(self.state / 'current.json', fixture(rev, f'#00000{rev}'))
-            await asyncio.sleep(.015)
+            # A single burst, without yielding past the debounce window on a
+            # heavily loaded runner; inotify observes the final atomic replace.
         await self.settle()
         self.assertEqual(q.qsize(), 1)
         self.assertEqual(q.get_nowait()['revision'], 4)
@@ -105,6 +113,22 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         finally:
             await other.close()
         self.bridge.clients.discard(q)
+
+    async def test_slow_cache_write_notifications(self):
+        # Reproduce the loaded-runner race: the real cache write completes
+        # later than the former fixed 250 ms sleep. Notification must still arrive.
+        original = atomic_json
+        def delayed(path, value):
+            time.sleep(.4)
+            return original(path, value)
+        updates = asyncio.Queue(maxsize=10)
+        self.bridge.clients.add(updates)
+        with patch('noctalia_theme_sync.bridge.atomic_json', side_effect=delayed):
+            atomic_json(self.state / 'current.json', fixture())
+            await self.settle()
+            self.assertEqual(updates.get_nowait()['revision'], 1)
+            self.assertTrue(updates.empty())
+        self.bridge.clients.discard(updates)
 
     async def test_missing_directory_recreation(self):
         # Remove the watched directory itself, not just the file.
@@ -162,7 +186,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((await self.request('/v1/events', 'bad'))[0], 401)
             self.assertEqual((await self.request('/health', remote.secret))[0], 503)
             atomic_json(self.state / 'current.json', fixture())
-            await self.settle()
+            await self.settle(remote)
             self.assertEqual((await self.request('/v1/theme', remote.secret))[0], 200)
             self.assertEqual((await self.request('/v1/events', remote.secret))[0], 200)
             self.assertEqual((await self.request('/health', remote.secret, 'Origin: http://evil.invalid\r\n'))[0], 403)
@@ -221,10 +245,10 @@ class Tests(unittest.IsolatedAsyncioTestCase):
                 updates = asyncio.Queue(maxsize=10)
                 recovery.clients.add(updates)
                 (state / 'current.json').write_text('{')
-                await self.settle()
+                await self.settle(recovery)
                 self.assertEqual(recovery.source_status, 'invalid')
                 self.assertEqual(pub.publish()['revision'], 2)
-                await self.settle()
+                await self.settle(recovery)
                 self.assertEqual(recovery.source_status, 'valid')
                 self.assertTrue(updates.empty())
             finally:
