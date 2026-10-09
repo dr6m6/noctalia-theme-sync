@@ -12,13 +12,21 @@ session. Install the target applications separately. Inspect:
 ./bin/noctalia-theme-sync install --adapters kitty,btop --dry-run
 ```
 
+For an existing personal Neovim setup, use [Shadow Mode](SHADOW.md) first.
+Invoking its commands from a checkout or installing the Python/Nix package does
+not require a normal integration `install`. Shadow creates only its explicitly
+chosen private output/metadata and starts no services. Keep the old writer,
+default theme, init/plugins and Noctalia fragments unchanged during the preview.
+
 `doctor` checks Linux, Python/Noctalia and paths, lists detected apps/dependencies
 and validates an existing export. It does not promise to detect every native
 host, GTK theme, sandboxed application or runtime GUI preference.
 
-A nonzero plan means a blocker. Existing builtin/community adapters should be
-removed from your own enabled Noctalia adapter list before installing a replacement.
-Keep the remaining adapters enabled. The CLI does not change that list for you.
+A nonzero plan means a blocker. Existing builtin/community adapters require an
+independent parity check and reviewed activation/rollback plan before replacement.
+The CLI does not disable those writers or change the enabled adapter list for you.
+On Noctalia 5.2.1 fragment edits can trigger all template hooks; preview through
+Shadow Mode instead of making such an edit just to resolve an installer conflict.
 An existing user template writer must likewise be resolved. A symlink is not made
 writable by `--adopt-existing`. Adoption requires a checksum-bound reviewed
 `--from-plan`; see [Controlled adoption](CONTROLLED-ADOPTION.md).

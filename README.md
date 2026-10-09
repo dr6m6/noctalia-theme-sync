@@ -56,6 +56,11 @@ application pixels. Detailed dependencies, tested scope and limitations:
 
 ## Quick start
 
+If you already have a working personal Neovim integration, start with the
+[private preview](#safe-previews-for-an-existing-integration). Installing the
+package alone does not adopt an application; normal `install` is a separate
+operation that can create Noctalia hooks. Shadow commands leave those hooks alone.
+
 Inspect the plan before applying it. Example for two independent integrations:
 
 ```sh
@@ -109,10 +114,11 @@ the CLI. Codex uses its native `CODEX_HOME` (default `~/.codex`) for only its
 theme file and theme selection. See the [path table](docs/INSTALL.md#files-and-xdg).
 
 The installer stops on existing producers, enabled overlapping Noctalia builtins,
-unmanaged outputs, symlinks and edited managed files. Disable an overlapping
-integration yourself before installing its replacement. `--adopt-existing`
-explicitly backs up a pre-existing generated file; it does not suppress producer
-or symlink conflicts.
+unmanaged outputs, symlinks and edited managed files. Preview and verify a
+replacement before considering changes to an overlapping integration.
+`--adopt-existing` explicitly backs up a pre-existing generated file and requires
+a reviewed `plan --write-plan` followed by `install --from-plan`; it does not
+suppress producer or symlink conflicts. See [controlled adoption](docs/CONTROLLED-ADOPTION.md).
 
 An existing canonical publisher can be retained with `--consume-existing`.
 That mode installs **no publisher hook**. Run `apply` manually or opt into
@@ -160,7 +166,8 @@ application restarts are used.
 
 Safe screenshots use isolated app configurations, an original minimal logo and
 synthetic wallpapers. They contain no account data or personal artwork. See
-[release validation](docs/VALIDATION-v0.2.0.md) for what was actually checked.
+[v0.3.0 validation](docs/VALIDATION-v0.3.0.md) for Shadow Mode and
+[v0.2.0 validation](docs/VALIDATION-v0.2.0.md) for the earlier desktop adapters.
 
 ![Fastfetch and Kitty with a Noctalia purple palette](docs/screenshots/kitty-fastfetch-purple.png)
 ![Codex native custom syntax theme](docs/screenshots/codex-purple.png)
@@ -232,6 +239,47 @@ For a running personal Neovim theme, use the opt-in [Shadow Mode](docs/SHADOW.md
 to render a distinct private output and launch an isolated preview. It retains
 the personal writer and Noctalia hooks. Optional foreground SSE delivery consumes
 the existing bridge; installation creates no service or default theme selection.
+
+```sh
+# Use the checkout CLI without installing over an existing personal CLI.
+TRIAL=$(mktemp -d)
+REVIEW=$(mktemp -d)/shadow-plan.json
+# Reads an existing compatible canonical current.json; no Noctalia IPC required.
+./bin/noctalia-theme-sync shadow plan --root "$TRIAL" --write-plan "$REVIEW"
+./bin/noctalia-theme-sync shadow install --root "$TRIAL" --from-plan "$REVIEW" --dry-run
+# Inspect the plan before this explicit opt-in:
+./bin/noctalia-theme-sync shadow install --root "$TRIAL" --from-plan "$REVIEW"
+./bin/noctalia-theme-sync shadow test --root "$TRIAL" --interactive
+./bin/noctalia-theme-sync shadow status --root "$TRIAL"
+./bin/noctalia-theme-sync shadow uninstall --root "$TRIAL" --dry-run
+./bin/noctalia-theme-sync shadow uninstall --root "$TRIAL"
+```
+
+Without `--interactive`, `shadow test` is headless. Its temporary HOME/XDG Neovim
+uses no ordinary init/plugins; this is an environment-isolated preview, not a
+security sandbox for an untrusted Neovim executable. Namespace isolation is
+recommended for independent plugin validation. The only owned adapter output is
+`$TRIAL/config/nvim/colors/noctalia-nts.lua`; `colors/noctalia.lua` stays with its
+personal writer. No default theme changes and no services are enabled.
+
+A one-shot render is **not live integration**. Before uninstalling, while an
+existing bridge is running, this optional foreground command supplies updates to
+the private output:
+
+```sh
+./bin/noctalia-theme-sync shadow watch --root "$TRIAL" --events http://127.0.0.1:8765/v1/events
+```
+
+It adds one read-only SSE subscription, no listener/publisher. Run it alongside a
+separate interactive preview, then stop with Ctrl+C before removal. The preview's
+guarded timer reloads accepted private output. Ordinary Neovim sessions are not
+updated; permanent delivery and production theme selection need separate review.
+`shadow rollback` is equivalent to uninstall; `shadow rollback --recover` only
+recovers an interrupted transaction and refuses unknown content/mode changes.
+
+No templates.toml edit or global `templates-apply` is needed. Noctalia 5.2.1 can
+run the entire template pipeline when that file changes, so a shadow trial must
+leave it untouched. [Full commands, conflicts and future per-session selection](docs/SHADOW.md).
 
 ## License
 

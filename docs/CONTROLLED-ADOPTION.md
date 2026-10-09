@@ -13,6 +13,11 @@ wrappers and runtime patches that these adapters do not reproduce. File generati
 tests do not establish visual or live reload parity. Preserve those integrations
 until their specific replacement has passed a separate acceptance check.
 
+For Neovim, start with [Shadow Mode](SHADOW.md): a distinct private output can
+coexist with the old writer without editing Noctalia or adopting `noctalia.lua`.
+Preview acceptance is not authorization or proof of production adoption. In
+particular, do not disable a working writer solely to make an adoption plan pass.
+
 The CLI reports existing Noctalia publishers and hooks. It rejects known native
 and personal writers for selected adapters, including legacy templates whose
 output filenames differ from the public adapter. Unknown third-party writers and

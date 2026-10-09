@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "noctalia-theme-sync"
-version = "0.2.1"
+version = "0.3.0"
 description = "Safe, per-user Noctalia v5 palette synchronization and optional local JSON/SSE bridge"
 readme = "README.md"
 requires-python = ">=3.11"
