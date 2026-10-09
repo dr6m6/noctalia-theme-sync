@@ -20,7 +20,8 @@ A nonzero plan means a blocker. Existing builtin/community adapters should be
 removed from your own enabled Noctalia adapter list before installing a replacement.
 Keep the remaining adapters enabled. The CLI does not change that list for you.
 An existing user template writer must likewise be resolved. A symlink is not made
-writable by `--adopt-existing`.
+writable by `--adopt-existing`. Adoption requires a checksum-bound reviewed
+`--from-plan`; see [Controlled adoption](CONTROLLED-ADOPTION.md).
 
 ## Linux checkout, no package manager
 

@@ -107,7 +107,9 @@ class ProductTests(unittest.TestCase):
         p = adapters.target('config/nvim/colors/noctalia.lua')
         xdg.write(p, b'-- previous theme\n')
         self.assertEqual(self.call('install', '--adapters', 'neovim'), 1)
-        self.install('neovim', '--adopt-existing')
+        plan = str(self.root / 'reviewed.json')
+        self.assertEqual(self.call('plan', '--adapters', 'neovim', '--adopt-existing', '--write-plan', plan), 0)
+        self.install('neovim', '--adopt-existing', '--from-plan', plan)
         self.assertEqual(self.call('rollback'), 0)
         self.assertEqual(p.read_bytes(), b'-- previous theme\n')
 

@@ -49,6 +49,9 @@ def check(m, path):
     path = str(path)
     current = xdg.read(path)
     entry = m['files'].get(path)
+    if entry and entry.get('installed_mode') is not None and current is not None:
+        if (Path(path).stat().st_mode & 0o777) != entry['installed_mode']:
+            raise ValueError('user-modified managed permissions; preserve or reconcile them first: ' + path)
     if entry and xdg.digest(current) != entry['installed_sha256']:
         if entry.get('kind') == 'codex-theme' and path == str(xdg.codex_home() / 'config.toml'):
             from .native import codex_selected
@@ -58,8 +61,12 @@ def check(m, path):
     return current
 
 
-def commit(m, changes, registrations=None, modes=None, forget=()):
+def commit(m, changes, registrations=None, modes=None, forget=(), expected=None):
     """Preflight everything, save journal, write files, then commit ownership."""
+    if expected is not None:
+        from .adoption import signature
+        if any(signature(path) != value for path, value in expected.items()):
+            raise ValueError('reviewed input changed before transaction; replan')
     m = copy.deepcopy(m)
     registrations = registrations or {}
     modes = modes or {}
@@ -71,12 +78,13 @@ def commit(m, changes, registrations=None, modes=None, forget=()):
         snapshots[path] = {'data': encode(current), 'mode': mode}
         if path not in m['files']:
             m['files'][path] = {'original': encode(current), 'original_mode': mode,
-                                'installed_sha256': xdg.digest(current), 'kind': registrations.get(path, 'static')}
+                                'installed_sha256': xdg.digest(current), 'installed_mode': mode if current is not None else None, 'kind': registrations.get(path, 'static')}
             if registrations.get(path) == 'codex-theme':
                 m['files'][path]['owned_initial'] = encode(changes.get(path, current))
         if path in changes:
             data = changes[path]
             m['files'][path]['installed_sha256'] = xdg.digest(data)
+            m['files'][path]['installed_mode'] = modes.get(path, snapshots[path]['mode']) if data is not None else None
     old_manifest = xdg.read(manifest_path())
     journal = {'before': snapshots, 'after': {p: xdg.digest(changes.get(p, decode(v['data']))) for p, v in snapshots.items()},
                'manifest': encode(old_manifest)}

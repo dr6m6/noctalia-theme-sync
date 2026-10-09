@@ -13,6 +13,8 @@ only palette source; the optional bridge is local HTTP/SSE, not a producer.
    force-copying dotfiles or breaking Nix/Home Manager symlinks. Explain genuine
    conflicts. `--adopt-existing` needs user authorization to manage the old output;
    an explicitly authorized installation request can supply that authorization.
+   A real adoption also requires `--from-plan` created by `plan --write-plan`;
+   inspect its blockers and exact changes first (docs/CONTROLLED-ADOPTION.md).
 4. Install only selected integrations. Experimental adapters require opt-in.
    Do not start or enable services unless requested. Never duplicate an existing
    bridge, hook or compositor/session integration.

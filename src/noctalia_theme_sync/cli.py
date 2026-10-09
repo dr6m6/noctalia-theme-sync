@@ -10,10 +10,9 @@ import signal
 import socket
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 
-from . import __version__, adapters, diagnostics, native, transaction as tx, xdg
+from . import __version__, adapters, adoption, diagnostics, native, transaction as tx, xdg
 from .model import config, read_json, validate
 
 
@@ -52,39 +51,7 @@ def selection(args, m):
 
 
 def inspect_noctalia(selected, consume_existing=False):
-    root = xdg.base('config') / 'noctalia'
-    issues = []
-    conflicts = []
-    for path in sorted(root.glob('*.toml')):
-        if path.name == 'noctalia-theme-sync.toml':
-            continue
-        try:
-            theme = tomllib.loads(path.read_text()).get('theme', {}).get('templates', {})
-        except (OSError, ValueError) as exc:
-            issues.append('cannot parse Noctalia TOML: ' + path.name + ' (' + type(exc).__name__ + ')')
-            continue
-        builtins = theme.get('builtin_ids', []) if theme.get('enable_builtin_templates', True) else []
-        overlaps = set(selected) & set(builtins)
-        if 'gtk' in selected:
-            overlaps |= set(builtins) & {'gtk3', 'gtk4'}
-        if overlaps:
-            conflicts.append('existing builtin adapters in ' + path.name + ': ' + ', '.join(sorted(overlaps)))
-        if theme.get('enable_community_templates', False):
-            overlaps = set(selected) & set(theme.get('community_ids', []))
-            if overlaps:
-                conflicts.append('existing community adapters in ' + path.name + ': ' + ', '.join(sorted(overlaps)))
-        for entry in theme.get('user', {}).values():
-            output = entry.get('output_path', [])
-            output = [output] if isinstance(output, str) else output
-            for value in output:
-                if 'noctalia/theme-sync/palette.json' in value and not consume_existing:
-                    conflicts.append('canonical publisher already configured in ' + path.name + '; use --consume-existing')
-                for name in selected:
-                    for definition in adapters.registry()[name]['outputs']:
-                        suffix = definition['path'].split('/', 1)[1]
-                        if value.endswith(suffix):
-                            conflicts.append('output already written by Noctalia in ' + path.name)
-    return issues + conflicts
+    return adoption.inventory(selected, consume_existing)['blockers']
 
 
 def config_fragment(command):
@@ -124,6 +91,8 @@ def install_plan(args, m):
         names = sorted(set(names) | set(m['adapters']))  # install adds; disable removes
     version = noctalia_version()
     issues = inspect_noctalia(names, consume)
+    if xdg.read(xdg.state() / 'pending.json') is not None:
+        issues.append('interrupted transaction: run rollback --recover')
     if version is None or version[0] != 5:
         issues.append('Noctalia v5 executable required')
     if not (xdg.base('config') / 'noctalia').is_dir():
@@ -145,6 +114,8 @@ def install_plan(args, m):
         pass
     except (ValueError, OSError):
         issues.append('existing canonical snapshot invalid; inspect before installing')
+    if consume and snapshot is None:
+        issues.append('--consume-existing requires a valid existing canonical snapshot')
     try:
         changes.update(adapters.activation(names, lambda p: tx.check(m, p), mode, snapshot))
     except (OSError, ValueError) as exc:
@@ -190,6 +161,14 @@ def install_plan(args, m):
               'notes': ['Backups persist in private XDG state. No services are started automatically.',
                         'Enable Neovim/Vencord/Telegram/Steam using the documented native controls.',
                         'Apply Noctalia templates after installation: noctalia msg templates-apply.']}
+    for change in report['changes']:
+        path = change['path']
+        before = adoption.signature(path)
+        change.update(before_sha256=before['sha256'], after_sha256=xdg.digest(changes[path]),
+                      before_mode=before['mode'],
+                      ownership='managed' if path in m['files'] else 'unmanaged' if before['sha256'] else 'absent')
+    report['existing_pipeline'] = adoption.inventory(names, consume)
+    adoption.bind(report, changes, registrations)
     return report, changes, registrations
 
 
@@ -368,6 +347,9 @@ def main(argv=None):
         p.add_argument('--bridge', action='store_true', help='stage optional systemd user unit; do not start it')
         p.add_argument('--adopt-existing', action='store_true', help='back up existing generated output before managing it')
         p.add_argument('--dry-run', action='store_true')
+        if name in ('plan', 'install', 'update'):
+            p.add_argument('--write-plan', help='save a private checksum-bound plan; does not authorize installation')
+            p.add_argument('--from-plan', help='require the exact previously reviewed plan, including input checksums')
     for name in ('apply', 'sync'):
         p = sub.add_parser(name)
         p.add_argument('--palette', help='explicit canonical v1 JSON; useful for isolated validation')
@@ -416,20 +398,31 @@ def dispatch(args):
         elif args.command in ('plan', 'install', 'update'):
             m = tx.load()
             report, changes, registrations = install_plan(args, m)
+            if args.from_plan:
+                adoption.check(args.from_plan, report)
+            if args.write_plan:
+                if args.command != 'plan' and not args.dry_run:
+                    raise ValueError('--write-plan requires plan or --dry-run')
+                adoption.save(args.write_plan, report)
             emit(report)
             if args.command == 'plan' or args.dry_run:
                 return 1 if report['blockers'] else 0
             if report['blockers']:
                 return 1
+            if args.adopt_existing and not args.from_plan:
+                raise ValueError('--adopt-existing requires a reviewed --from-plan; use plan --write-plan first')
             with tx.locked():
                 # Recompute under the installation lock to avoid stale preflight.
                 m = tx.load()
                 report, changes, registrations = install_plan(args, m)
                 if report['blockers']:
                     raise ValueError('; '.join(report['blockers']))
+                if args.from_plan:
+                    adoption.check(args.from_plan, report)
                 m.update(adapters=report['adapters'], consume_existing=report['consume_existing'], bridge=report['bridge'], native_context=report['native_context'])
                 command = str(xdg.base('bin') / 'noctalia-theme-sync')
-                tx.commit(m, changes, registrations, modes={command: 0o755})
+                tx.commit(m, changes, registrations, modes={command: 0o755},
+                          expected=report['reviewed_plan']['inputs'] if args.from_plan else None)
         elif args.command in ('apply', 'sync'):
             return apply(args, publish=args.command == 'sync')
         elif args.command == 'rollback' and args.recover:
