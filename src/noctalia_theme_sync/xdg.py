@@ -15,6 +15,14 @@ def base(kind):
     return result
 
 
+def codex_home():
+    value = os.environ.get('CODEX_HOME', '')
+    root = Path(value) if value else Path.home() / '.codex'
+    if not root.is_absolute() or '..' in root.parts:
+        raise ValueError('CODEX_HOME must be absolute without traversal')
+    return root
+
+
 def state():
     return base('state') / 'noctalia-theme-sync'
 
@@ -28,7 +36,9 @@ def safe(path):
     if not path.is_absolute() or '..' in path.parts:
         raise ValueError('unsafe relative path')
     roots = [base(kind) for kind in ('config', 'data', 'state', 'cache', 'bin')]
-    if not any(path.is_relative_to(root) for root in roots):
+    # Only these two native theme targets are permitted outside XDG roots.
+    codex_targets = {codex_home() / 'config.toml', codex_home() / 'themes/noctalia-theme-sync.tmTheme'}
+    if path not in codex_targets and not any(path.is_relative_to(root) for root in roots):
         raise ValueError('target outside XDG directories')
     for parent in (path, *path.parents):
         if parent.is_symlink():

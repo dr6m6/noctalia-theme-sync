@@ -1,0 +1,21 @@
+{
+  "id": "fastfetch",
+  "status": "supported",
+  "commands": [
+    "fastfetch"
+  ],
+  "detect": [
+    "config/fastfetch/config.jsonc"
+  ],
+  "outputs": [
+    {
+      "template": "fastfetch.colors",
+      "path": "config/fastfetch/noctalia-theme-sync.colors"
+    }
+  ],
+  "dependencies": [
+    "Fastfetch >=2.63.1"
+  ],
+  "reload": "next invocation",
+  "limitations": "Preserves modules/layout/logo. Per-module overrides and embedded ANSI/image logo colors win. Custom config: NTS_FASTFETCH_CONFIG within XDG roots. No shell startup changes."
+}

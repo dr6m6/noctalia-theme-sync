@@ -1,0 +1,21 @@
+{
+  "id": "codex",
+  "status": "experimental",
+  "commands": [
+    "codex"
+  ],
+  "detect": [
+    "codex/config.toml"
+  ],
+  "outputs": [
+    {
+      "template": "codex.tmTheme",
+      "path": "codex/themes/noctalia-theme-sync.tmTheme"
+    }
+  ],
+  "dependencies": [
+    "Codex >=0.160.1 with native custom themes"
+  ],
+  "reload": "restart",
+  "limitations": "Native syntax/Markdown theme only; terminal chrome follows the terminal. Restart Codex after a palette change. No patches or live-reload guarantee; config layers can override tui.theme."
+}

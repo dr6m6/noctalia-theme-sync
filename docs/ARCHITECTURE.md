@@ -76,3 +76,42 @@ References: [Noctalia v5 template contract](https://docs.noctalia.dev/noctalia/t
 [app theming](https://docs.noctalia.dev/noctalia/theming/app-theming/),
 [XDG specification](https://specifications.freedesktop.org/basedir-spec/latest/),
 [asyncio streams](https://docs.python.org/3/library/asyncio-stream.html).
+
+## v0.2 native CLI adapters: reuse decision
+
+Research verified the official Fastfetch JSONC configuration and logo color API,
+Codex custom `.tmTheme` discovery plus `tui.theme`, and Kitty's native SIGUSR1
+configuration reload. References:
+[Fastfetch configuration](https://github.com/fastfetch-cli/fastfetch/wiki/Configuration),
+[Fastfetch color format](https://github.com/fastfetch-cli/fastfetch/wiki/Color-Format-Specification),
+[Codex customization](https://learn.chatgpt.com/docs/cli-customization),
+[Codex configuration](https://learn.chatgpt.com/docs/config-file/config-reference),
+[Kitty configuration](https://sw.kovidgoyal.net/kitty/conf/).
+
+Reuse/extension wins over importing another theme engine: the existing bounded
+renderer, canonical model, registry and durable transactions already cover palette
+ownership and recovery. Community template redistribution was not needed; new
+semantic projections and native format helpers are independently authored.
+
+Fastfetch has no native theme include in the inspected configuration API. A small
+bounded JSONC span editor therefore changes only display/logo color values while
+preserving comments, modules, logo sources and layout. A full JSON rewrite would
+lose comments; an external runtime wrapper would alter startup and add overhead.
+The parser rejects duplicate keys, malformed input and excessive nesting. No new
+runtime dependency, downloader, palette engine or daemon is introduced.
+
+Stock Codex 0.160.1 supports native custom syntax themes but does not provide a
+verified external live-reload contract. A local fork's polling/terminal cache and
+pet patches are deliberately excluded. The adapter is experimental and requires
+restart. It owns only `tui.theme`; TOML parse comparisons prove unrelated values
+are unchanged. Transactions permit subsequent non-theme app/user edits and merge
+restoration of the original theme without erasing those edits. Changing the owned
+theme key still blocks updates/removal. Whole original files remain private backups.
+
+Only `config.toml` and `themes/noctalia-theme-sync.tmTheme` may be written under
+`CODEX_HOME` outside XDG. No auth/session/pet traversal is allowed. Native target
+roots are pinned in the installation manifest so Noctalia hooks cannot silently
+select different files when environment variables differ. Changing roots requires
+uninstall/reinstall. Kitty's v0.1 include/template/reload implementation is retained;
+new diagnostics describe effective includes and later color overrides separately
+from unverified running pixels.

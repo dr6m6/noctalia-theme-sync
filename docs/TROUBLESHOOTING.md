@@ -84,3 +84,27 @@ Non-loopback listeners always require authentication. Do not place tokens in URL
 or logs. Wallpaper bytes are unavailable until explicit allowlisted roots are
 configured. Use the module's `systemctl --user` lifecycle if the service is NixOS
 module-managed instead of CLI-managed.
+
+## Fastfetch and Codex
+
+- No Fastfetch colors: inspect `NO_COLOR` and terminal truecolor support. Explicit
+  module `keyColor`/`outputColor` and ANSI/raster logo colors override global colors.
+  Startup may use a custom `--config` or renderer; select that JSONC file via
+  `NTS_FASTFETCH_CONFIG` before installation. The project never replaces `fetch`
+  with Fastfetch or installs a second startup wrapper.
+- JSONC rejected: fix malformed input, duplicate keys, non-object display/logo
+  color tables or excessive nesting. No partial installation is applied.
+- Codex incompatible: doctor reports `adapter_states.codex.compatibility`. Upgrade
+  a stock version older than verified 0.160.1; for privileged/VPN/pet wrappers set
+  `NTS_CODEX_BIN` to the native executable for diagnostics. No sudo is attempted.
+- Codex colors did not change: restart the TUI, inspect `/theme`, and verify no
+  project/CLI config layer overrides `tui.theme`. This is a syntax/Markdown theme,
+  not full chrome recoloring or an external live-reload implementation.
+- Codex theme key changed: restore the managed selection if you want rollback, or
+  reconcile the original theme from the private backup. Other new preferences are
+  preserved automatically. Inline/dotted/multiline theme config layouts are not
+  rewritten; use a normal `[tui]` table before installation.
+- Kitty active but palette mismatch: inspect options/includes after the managed
+  block; later values win. Dynamic includes and KITTY_CONFIG_DIRECTORY/--config
+  overrides require native verification. Ctrl+Shift+F5 or explicit `apply --reload`
+  reloads config; doctor does not query every existing window's live colors.

@@ -10,6 +10,8 @@ native notification; it still needs the app-side activation/dependencies.
 | --- | --- | --- | --- | --- |
 | `gtk` | Supported | GTK3: adw-gtk3; GTK4/libadwaita | Restart; toolkit-dependent live updates | Imports color definitions and sets GTK theme/mode in settings.ini. No portal round trip, GTK module or CSS injection. Apps can override colors. |
 | `qt` | Supported | qt5ct or qt6ct | Restart; `--reload` touches qtct directory | Set `QT_QPA_PLATFORMTHEME=qt5ct`/`qt6ct` appropriately in your session. KDE's separate color-scheme system is not managed. |
+| `fastfetch` | Supported | Fastfetch >=2.63.1 | Next invocation | Only native display/logo colors; JSONC comments/modules/layout/source retained. Per-module and embedded ANSI/image colors win. No startup/animation wrapper changes. |
+| `codex` | Experimental | Native Codex >=0.160.1 | Restart | Semantic syntax/Markdown theme; terminal chrome follows Kitty/terminal. Only tui.theme changes. No fork, patches, live reload or pet edits. |
 | `kitty` | Supported | Kitty, canonical terminal tokens | Ctrl+Shift+F5 or `apply --reload` | Owned processes only; existing options later in config can override includes. |
 | `firefox` | Supported | Pywalfox extension, Noctalia native host | Automatic on `sync`; explicit `apply --reload` | Shared `$XDG_CACHE_HOME/wal/colors.json` can conflict with other palette tools. No profiles, CSS or signed extensions are patched. |
 | `vesktop` | Experimental | Vencord local themes | Local theme file watcher | Independently authored minimal native CSS variables. No Material Discord base is bundled. Discord updates can change token coverage. |
@@ -23,6 +25,25 @@ native notification; it still needs the app-side activation/dependencies.
 | `icons` | Unavailable | Licensed artwork and distribution integration needed | — | Source artwork/SVG tooling excluded from initial release pending a separately scoped redistributable pack. |
 
 ## Activation
+
+- **Fastfetch:** the default `config.jsonc` (or existing `config.json`) is edited
+  surgically. An absent config gets a minimal color-only config, leaving native
+  default modules intact. `NTS_FASTFETCH_CONFIG` selects an existing custom JSONC
+  file inside your XDG roots, for example a Braille renderer's config. Set it during
+  initial installation; its path is then recorded. The adapter never changes Bash,
+  Kitty startup commands, custom renderers or their logo assets. `$1`–`$3` logo
+  placeholders receive semantic colors; raw ANSI and raster logos retain theirs.
+- **Codex:** generates `$CODEX_HOME/themes/noctalia-theme-sync.tmTheme` and selects
+  `tui.theme = "noctalia-theme-sync"` in the same home's `config.toml`. The adapter
+  supports plain `[tui]` tables; unconventional inline/dotted/multiline theme
+  layouts stop safely. Use `/theme` to inspect it. Restart after palette changes;
+  live external reload is not promised. Project/CLI config layers can override the
+  global selection. `NTS_CODEX_BIN` selects the native executable for version
+  checks when `codex` is a VPN/sudo/pet wrapper. Known privileged/pet wrappers are
+  not executed by diagnostics. Conservative minimum is the verified 0.160.1;
+  earlier versions are rejected even if they might support custom themes.
+  Uninstall restores the original theme while retaining new unrelated preferences.
+  Editing `tui.theme` itself requires reconciliation before apply/uninstall.
 
 - **GTK:** install adw-gtk3 first through your system's package manager. Generated
   GTK4 definitions also apply to applications that load user GTK CSS. Their live
@@ -56,6 +77,17 @@ checks four synthetic palettes, complete token substitution, installation,
 permissions and rollback. The real-desktop smoke checks Noctalia rendering,
 source palette changes and extracted output parity in an isolated HOME.
 It does not certify every application version or claim pixel-level CI coverage.
+
+## State diagnostics
+
+`doctor` and `status` retain their v0.1 fields and add `adapter_states`. `available`
+means detected; `installed` means owned by this project; `active` is configuration
+wiring (unknown for adapters requiring GUI activation); `palette_applied` compares
+managed output/effective config with the current canonical palette. Kitty parsing
+follows ordinary includes and detects later overrides. Dynamic includes require
+native verification. External Noctalia Kitty includes are reported separately.
+`running_palette` remains `unverified`: a config comparison is not a runtime query.
+`reload_required` describes the native action; the CLI never restarts Codex.
 
 ## Adding an adapter
 

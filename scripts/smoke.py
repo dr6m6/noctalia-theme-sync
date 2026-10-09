@@ -20,6 +20,15 @@ def main():
         binary = fake / 'noctalia'
         binary.write_text('#!' + sys.executable + '\nimport sys\nprint("noctalia v5.2.1 (fixture)")\n')
         binary.chmod(0o755)
+        codex = fake / 'codex'
+        codex.write_text('#!' + sys.executable + '\nprint("codex-cli 0.160.1")\n')
+        codex.chmod(0o755)
+        fastfetch = fake / 'fastfetch'
+        fastfetch.write_text('#!' + sys.executable + '\nprint("fastfetch 2.63.1")\n')
+        fastfetch.chmod(0o755)
+        env['CODEX_HOME'] = str(root / 'codex')
+        env['NTS_CODEX_BIN'] = str(codex)
+        env.pop('NTS_FASTFETCH_CONFIG', None)
         env['PATH'] = str(fake) + ':' + env.get('PATH', '')
         (root / 'config/noctalia').mkdir(parents=True)
         palette = root / 'state/noctalia/theme-sync/current.json'
@@ -34,11 +43,11 @@ def main():
             return result.stdout
         call('doctor')
         call('list')
-        call('plan', '--adapters', 'kitty,gtk,qt,neovim,btop,cava')
-        call('install', '--adapters', 'kitty,gtk,qt,neovim,btop,cava', '--dry-run')
+        call('plan', '--adapters', 'kitty,gtk,qt,neovim,btop,cava,fastfetch,codex', '--experimental')
+        call('install', '--adapters', 'kitty,gtk,qt,neovim,btop,cava,fastfetch,codex', '--experimental', '--dry-run')
         assert not (root / 'state/noctalia-theme-sync').exists()
-        call('install', '--adapters', 'kitty,gtk,qt,neovim,btop,cava')
-        call('install', '--adapters', 'kitty,gtk,qt,neovim,btop,cava', installed=True)
+        call('install', '--adapters', 'kitty,gtk,qt,neovim,btop,cava,fastfetch,codex', '--experimental')
+        call('install', '--adapters', 'kitty,gtk,qt,neovim,btop,cava,fastfetch,codex', '--experimental', installed=True)
         call('update', installed=True)
         for name in ('dark-green', 'light-purple', 'light-green'):
             call('apply', '--palette', str(ROOT / 'tests/fixtures' / (name + '.json')), installed=True)

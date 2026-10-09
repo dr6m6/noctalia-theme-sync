@@ -50,6 +50,10 @@ def check(m, path):
     current = xdg.read(path)
     entry = m['files'].get(path)
     if entry and xdg.digest(current) != entry['installed_sha256']:
+        if entry.get('kind') == 'codex-theme' and path == str(xdg.codex_home() / 'config.toml'):
+            from .native import codex_selected
+            if codex_selected(current):
+                return current  # Native app/user edits to unrelated settings are retained.
         raise ValueError('user-modified managed file; preserve or reconcile it first: ' + path)
     return current
 
@@ -68,6 +72,8 @@ def commit(m, changes, registrations=None, modes=None, forget=()):
         if path not in m['files']:
             m['files'][path] = {'original': encode(current), 'original_mode': mode,
                                 'installed_sha256': xdg.digest(current), 'kind': registrations.get(path, 'static')}
+            if registrations.get(path) == 'codex-theme':
+                m['files'][path]['owned_initial'] = encode(changes.get(path, current))
         if path in changes:
             data = changes[path]
             m['files'][path]['installed_sha256'] = xdg.digest(data)

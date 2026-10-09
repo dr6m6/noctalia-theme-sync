@@ -13,7 +13,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from . import __version__, adapters, transaction as tx, xdg
+from . import __version__, adapters, diagnostics, native, transaction as tx, xdg
 from .model import config, read_json, validate
 
 
@@ -128,6 +128,11 @@ def install_plan(args, m):
         issues.append('Noctalia v5 executable required')
     if not (xdg.base('config') / 'noctalia').is_dir():
         issues.append('Noctalia configuration directory missing')
+    for name, probe in (('codex', native.codex_version), ('fastfetch', native.fastfetch_version)):
+        if name in names:
+            capability = probe()
+            if not capability['compatible']:
+                issues.append(capability['reason'])
     changes, command = runtime_files()
     if not consume:
         changes[str(xdg.base('config') / 'noctalia/noctalia-theme-sync.toml')] = config_fragment(command)
@@ -141,10 +146,12 @@ def install_plan(args, m):
     except (ValueError, OSError):
         issues.append('existing canonical snapshot invalid; inspect before installing')
     try:
-        changes.update(adapters.activation(names, lambda p: tx.check(m, p), mode))
+        changes.update(adapters.activation(names, lambda p: tx.check(m, p), mode, snapshot))
     except (OSError, ValueError) as exc:
         issues.append(str(exc))
     registrations = {str(adapters.target(o['path'])): 'generated' for name in names for o in adapters.registry()[name]['outputs']}
+    if 'codex' in names:
+        registrations[str(adapters.target('codex/config.toml'))] = 'codex-theme'
     if snapshot:
         try:
             changes.update(adapters.generate(names, snapshot))
@@ -173,11 +180,11 @@ def install_plan(args, m):
     for path in sorted(set(changes) | set(registrations)):
         try:
             current = tx.check(m, path)
-            if path not in m['files'] and current is not None and (path in registrations or path in runtime_files()[0] or path.endswith('noctalia-theme-sync.toml') or path.endswith('noctalia-theme-sync-bridge.service')) and not args.adopt_existing:
+            if path not in m['files'] and current is not None and (registrations.get(path) == 'generated' or path in runtime_files()[0] or path.endswith('noctalia-theme-sync.toml') or path.endswith('noctalia-theme-sync-bridge.service')) and not args.adopt_existing:
                 issues.append('unmanaged output already exists; --adopt-existing backs it up: ' + path)
         except (OSError, ValueError) as exc:
             issues.append(str(exc))
-    report = {'adapters': names, 'consume_existing': consume, 'bridge': bridge,
+    report = {'adapters': names, 'native_context': native.target_context(names), 'consume_existing': consume, 'bridge': bridge,
               'changes': [{'path': p, 'action': 'unchanged' if xdg.read(p) == data else 'update' if Path(p).exists() else 'create'} for p, data in sorted(changes.items())],
               'reserved_outputs': sorted(registrations), 'blockers': sorted(set(issues)),
               'notes': ['Backups persist in private XDG state. No services are started automatically.',
@@ -231,7 +238,7 @@ def apply(args, publish=False):
             palette = validate(read_json(args.palette or xdg.canonical() / 'current.json'))
         changes = adapters.generate(m['adapters'], palette)
         # Update GTK dark/light settings while preserving all other settings.
-        activation = adapters.activation(m['adapters'], lambda p: tx.check(m, p), palette['mode'])
+        activation = adapters.activation(m['adapters'], lambda p: tx.check(m, p), palette['mode'], palette)
         changes.update(activation)
         for path in changes:
             tx.check(m, path)
@@ -288,7 +295,9 @@ def remove(args):
         selected_paths = output_paths | activation_paths if remaining else set(m['files'])
         restored = {p: tx.decode(m['files'][p]['original']) for p in selected_paths if p in m['files']}
         for path in restored:
-            tx.check(m, path)
+            current = tx.check(m, path)
+            if m['files'][path].get('kind') == 'codex-theme':
+                restored[path] = native.codex_restore(current, restored[path], tx.decode(m['files'][path].get('owned_initial')))
         if not remaining and m.get('bridge'):
             result = run(['systemctl', '--user', 'is-active', 'noctalia-theme-sync-bridge.service']) if shutil.which('systemctl') else None
             if result and result.returncode == 0:
@@ -307,8 +316,9 @@ def remove(args):
                 xdg.write(backup, xdg.read(tx.manifest_path()))
         modes = {p: m['files'][p]['original_mode'] for p in restored}
         m['adapters'] = remaining
+        m['native_context'] = native.target_context(remaining)
         if not remaining:
-            m.update(bridge=False, consume_existing=False)
+            m.update(bridge=False, consume_existing=False, native_context={})
         tx.commit(m, restored, modes=modes, forget=restored)
     return 0
 
@@ -332,6 +342,12 @@ def doctor():
         info['issues'].append('canonical export invalid')
     if xdg.read(xdg.state() / 'pending.json'):
         info['issues'].append('interrupted transaction; rollback --recover')
+    palette = None
+    try:
+        palette = validate(read_json(xdg.canonical() / 'current.json'))
+    except (OSError, ValueError):
+        pass
+    info['adapter_states'] = diagnostics.states(tx.load(), palette)
     emit(info)
     return 1 if info['issues'] else 0
 
@@ -375,13 +391,27 @@ def main(argv=None):
     p.add_argument('--dry-run', action='store_true')
     args = parser.parse_args(argv)
     try:
+        with native.installation_context(tx.load()):
+            return dispatch(args)
+    except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired) as exc:
+        print('noctalia-theme-sync: ' + str(exc), file=sys.stderr)
+        return 1
+
+
+def dispatch(args):
+    try:
         if args.command == 'doctor':
             return doctor()
         if args.command == 'list':
             emit([{**a, 'detected': adapters.available(a)} for a in adapters.registry().values()] + [{'id': 'affine', 'status': 'unavailable', 'limitations': 'No supported production palette API.'}, {'id': 'icons', 'status': 'unavailable', 'limitations': 'Artwork redistribution and symbolic recoloring excluded from initial release.'}])
         elif args.command == 'status':
             m = tx.load()
-            emit({'adapters': m['adapters'], 'bridge_unit': m['bridge'], 'consume_existing': m['consume_existing'],
+            palette = None
+            try:
+                palette = validate(read_json(xdg.canonical() / 'current.json'))
+            except (OSError, ValueError):
+                pass
+            emit({'adapter_states': diagnostics.states(m, palette), 'adapters': m['adapters'], 'bridge_unit': m['bridge'], 'consume_existing': m['consume_existing'],
                   'files': [{'path': p, 'modified': xdg.digest(xdg.read(p)) != e['installed_sha256']} for p, e in m['files'].items()]})
         elif args.command in ('plan', 'install', 'update'):
             m = tx.load()
@@ -397,7 +427,7 @@ def main(argv=None):
                 report, changes, registrations = install_plan(args, m)
                 if report['blockers']:
                     raise ValueError('; '.join(report['blockers']))
-                m.update(adapters=report['adapters'], consume_existing=report['consume_existing'], bridge=report['bridge'])
+                m.update(adapters=report['adapters'], consume_existing=report['consume_existing'], bridge=report['bridge'], native_context=report['native_context'])
                 command = str(xdg.base('bin') / 'noctalia-theme-sync')
                 tx.commit(m, changes, registrations, modes={command: 0o755})
         elif args.command in ('apply', 'sync'):

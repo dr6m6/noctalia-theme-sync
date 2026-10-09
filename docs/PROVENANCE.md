@@ -50,3 +50,13 @@ Publication checks scan the new tracked tree and **every blob in every commit**,
 plus gitleaks on directory/history. This is a reproducible scan, not a guarantee
 about all future contributions. Private desktop test artifacts stay outside the
 repository. Only sanitized test summaries are recorded publicly.
+
+## v0.2 extraction
+
+The local Fastfetch Braille wrapper/render configuration and Codex native-theme
+integration were inspected for behavior only. No private paths, artwork, credentials,
+pet code or local Codex patches were copied. Fastfetch/Codex semantic projections,
+JSONC span editor and scoped TOML activation/restoration are new MIT project code.
+Kitty's original upstream template and implementation remain unchanged. Screenshots
+capture actual native applications in isolated homes with synthetic Noctalia
+wallpapers and original minimal block logo; no personal artwork is redistributed.

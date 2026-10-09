@@ -1,0 +1,6 @@
+{
+  "keys": "{{ colors.primary.default.hex }}",
+  "title": "{{ colors.secondary.default.hex }}",
+  "separator": "{{ colors.tertiary.default.hex }}",
+  "output": "{{ colors.on_surface.default.hex }}"
+}

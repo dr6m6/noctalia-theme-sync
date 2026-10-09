@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check the complete tracked tree/history without printing sensitive values."""
 import argparse
+import hashlib
 import re
 import subprocess
 from pathlib import Path
@@ -14,6 +15,9 @@ PATTERNS = {
     'bearer literal': re.compile(rb'Bearer [A-Za-z0-9_-]{32,}'),
     'private endpoint': re.compile(rb'https?://(?:10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)'),
 }
+# Exact manually reviewed native screenshots; all other binary images remain blocked.
+REVIEWED_IMAGES = {'docs/screenshots/kitty-fastfetch-purple.png': '07364f437ac7c887ad777d70ec0f2d821704e853eca1302e8dc164a8c99b5089', 'docs/screenshots/kitty-fastfetch-green.png': '0f3ceb5bd8ff94500a95c28880a5f57d1c6667bba8bf262e2b0f4aee4cbd4f98', 'docs/screenshots/codex-purple.png': '497a4904a4186d146db4c061129d28164f07a932cd539a501cd1f8c1eaa9dbf1', 'docs/screenshots/codex-green.png': 'd0bd1dfbfee70900a3b087d7d243654a1c138725e3271b180ef199caae459c60'}
+
 FORBIDDEN = {'tdata', 'profiles.ini', 'logins.json', 'key4.db', 'cookies.sqlite', 'current.json', 'installation.json', 'pending.json', 'bridge-token', '.env'}
 
 
@@ -26,7 +30,8 @@ def scan(name, data):
     if set(Path(name).parts) & FORBIDDEN:
         errors.append('forbidden filename')
     if Path(name).suffix.lower() in ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.sqlite', '.db', '.zip', '.xpi'):
-        errors.append('unreviewed binary asset')
+        if REVIEWED_IMAGES.get(name) != hashlib.sha256(data).hexdigest():
+            errors.append('unreviewed binary asset')
     for label, pattern in PATTERNS.items():
         if pattern.search(data):
             errors.append(label)

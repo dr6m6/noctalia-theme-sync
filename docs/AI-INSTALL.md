@@ -17,3 +17,10 @@ Give an agent access to your local terminal and the checked-out repository. Past
 
 Agent behavior is defined in [AGENTS.md](../AGENTS.md). Installation is local;
 GitHub publication, system rebuilds and wallpaper cycling are separate actions.
+
+For Fastfetch/Codex, include this in the request: "Select fastfetch and codex
+independently, use --experimental for codex, locate the native Codex executable
+without running sudo/VPN/pet wrappers, preserve layout/modules and all unrelated
+Codex settings/pet assets, and explain Fastfetch next-invocation and Codex restart.
+Review adapter_states and perform native checks without treating file hashes as
+visual evidence."

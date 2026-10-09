@@ -36,6 +36,8 @@ paths and every application version have not been certified.
 | --- | --- | --- |
 | GTK3 / GTK4 | Supported | Restart; GTK3 requires adw-gtk3 |
 | Qt5 / Qt6 | Supported | qt5ct/qt6ct platform theme; restart, optional notification |
+| Fastfetch | Supported | Native JSONC colors; next invocation; Fastfetch >=2.63.1 |
+| Codex CLI | Experimental | Native syntax theme; Codex >=0.160.1; restart |
 | Kitty | Supported | Managed include; Ctrl+Shift+F5 or explicit `--reload` |
 | Firefox | Supported | Pywalfox extension + Noctalia native host; sync pushes live |
 | Neovim | Supported | `:colorscheme noctalia`; add to your init yourself |
@@ -101,9 +103,10 @@ No `nixos-rebuild` is needed for wallpaper or palette changes.
 
 ## Configuration and existing installations
 
-All runtime files use `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, `XDG_DATA_HOME` and
+Most runtime files use `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, `XDG_DATA_HOME` and
 `XDG_CACHE_HOME`, with their standard defaults. Optional `NTS_BIN_HOME` relocates
-the CLI. See the [path table](docs/INSTALL.md#files-and-xdg).
+the CLI. Codex uses its native `CODEX_HOME` (default `~/.codex`) for only its
+theme file and theme selection. See the [path table](docs/INSTALL.md#files-and-xdg).
 
 The installer stops on existing producers, enabled overlapping Noctalia builtins,
 unmanaged outputs, symlinks and edited managed files. Disable an overlapping
@@ -155,9 +158,30 @@ need native activation. Steam, Telegram, Flatpak and application version coverag
 remain limited. No binary patches, Electron debugging/injection or automatic
 application restarts are used.
 
-Safe installation screenshots are not bundled: the source desktop contains
-personal content. The release includes synthetic palette fixtures and a
-reproducible [desktop smoke procedure](docs/DEVELOPMENT.md#real-desktop-smoke).
+Safe screenshots use isolated app configurations, an original minimal logo and
+synthetic wallpapers. They contain no account data or personal artwork. See
+[release validation](docs/VALIDATION-v0.2.0.md) for what was actually checked.
+
+![Fastfetch and Kitty with a Noctalia purple palette](docs/screenshots/kitty-fastfetch-purple.png)
+![Codex native custom syntax theme](docs/screenshots/codex-purple.png)
+
+### Fastfetch and Codex
+
+```sh
+./bin/noctalia-theme-sync plan --adapters fastfetch,codex --experimental
+./bin/noctalia-theme-sync install --adapters fastfetch,codex --experimental
+noctalia msg templates-apply
+```
+
+Fastfetch preserves your layout/modules/logo; embedded ANSI colors and per-module
+overrides still win. Codex modifies only `tui.theme`; auth, model, sandbox and pet
+settings stay yours. Its syntax/Markdown theme updates on restart, while terminal
+chrome follows your terminal palette. Custom wrappers can use `NTS_CODEX_BIN` to
+point diagnostics at the native executable. No Codex patch or fork is required.
+
+`doctor` and `status` expose `adapter_states`: availability, installation, native
+activation, palette-file correspondence and reload guidance. Running application
+colors remain explicitly unverified until checked in the app.
 
 ## Development and contributions
 
@@ -190,7 +214,17 @@ noctalia msg templates-apply
 CLI устанавливается в `~/.local/bin`. Откат: `noctalia-theme-sync rollback`.
 При конфликте не перезаписывайте конфиги вслепую: смотрите сообщения и
 [инструкцию](docs/TROUBLESHOOTING.md). Экспериментальные адаптеры требуют
-`--experimental`. Проект не меняет `/etc/nixos`, compositor, аккаунты и профили.
+`--experimental`. Для новых интеграций:
+
+```sh
+./bin/noctalia-theme-sync plan --adapters fastfetch,codex --experimental
+./bin/noctalia-theme-sync install --adapters fastfetch,codex --experimental
+noctalia msg templates-apply
+```
+
+Fastfetch обновляется при следующем запуске; Codex нужно перезапустить.
+Codex experimental: меняется только тема подсветки, pet и аккаунт не затрагиваются.
+Проект не меняет `/etc/nixos`, compositor, аккаунты и профили.
 
 ## License
 

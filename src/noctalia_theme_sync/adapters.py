@@ -28,7 +28,7 @@ def target(value):
     kind, relative = value.split('/', 1)
     if relative.startswith('/') or '..' in Path(relative).parts:
         raise ValueError('invalid adapter target')
-    return xdg.safe(xdg.base(kind) / relative)
+    return xdg.safe((xdg.codex_home() if kind == 'codex' else xdg.base(kind)) / relative)
 
 
 def available(item):
@@ -104,7 +104,7 @@ def ini(data, section, values):
     return (text[:begin] + body + text[end:]).encode()
 
 
-def activation(selected, existing, mode='dark'):
+def activation(selected, existing, mode='dark', palette=None):
     """Managed configuration, changed only after transaction preflight."""
     result = {}
     def get(relative):
@@ -113,6 +113,14 @@ def activation(selected, existing, mode='dark'):
     def marked(relative, label, content):
         p, data = get(relative)
         result[p] = block(data, label, content)
+    if 'fastfetch' in selected:
+        from .native import fastfetch_path, fastfetch_config
+        p = str(fastfetch_path())
+        result[p] = fastfetch_config(existing(p), palette)
+    if 'codex' in selected:
+        from .native import codex_theme
+        p = str(target('codex/config.toml'))
+        result[p] = codex_theme(existing(p))
     if 'kitty' in selected:
         marked('kitty/kitty.conf', 'kitty', 'include themes/noctalia-theme-sync.conf')
     if 'tmux' in selected:

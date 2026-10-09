@@ -26,7 +26,12 @@ only palette source; the optional bridge is local HTTP/SSE, not a producer.
 ## What can change
 
 Within the repository: `src/`, adapter assets, tests, docs, packaging and CI.
-Within a user's HOME: only the installation's planned, backed-up XDG files via CLI.
+Within a user's HOME: only planned, backed-up XDG files via CLI, plus the narrowly
+scoped Codex `config.toml` theme selection and owned `.tmTheme` under CODEX_HOME.
+Preserve non-theme Codex edits, auth, models, sandbox and every pet asset/preference.
+Inspect native_context in the private manifest; do not change installed target roots
+by exporting new environment variables. Never invoke known VPN/sudo/pet wrappers
+for version checks; use explicit NTS_CODEX_BIN pointing to a native executable.
 Never modify `/etc/nixos`, compositor config, account files, Firefox profiles,
 Telegram tdata, wallpapers, personal migrations or unrelated app configuration.
 Do not use sudo, change a system generation, modify binaries/ASAR, open Electron
@@ -63,3 +68,13 @@ atomic writes, XDG portability and conflict-preserving rollback. No telemetry.
 Keep private screenshots, raw snapshots, logs and backups outside Git. Before any
 public push, scan tracked tree and all history, then check CI and install docs.
 Publish only if specifically requested and provenance/security checks pass.
+
+For v0.2 adapters use `plan --adapters fastfetch,codex --experimental`, then dry-run.
+Fastfetch custom layouts need the actual NTS_FASTFETCH_CONFIG during initial install.
+Codex native syntax theme requires restart; no fork/live-reload/pet coupling is
+allowed. Check `adapter_states` but do not equate configuration `active` with pixels.
+Opt-in release desktop verification: `python scripts/release_desktop_smoke.py
+--cycle-wallpaper --codex-bin /absolute/native/codex --output /absolute/private/evidence`.
+This creates temporary windows and cycles wallpaper twice, restores in finally,
+queries live Kitty, and captures native Codex `/theme`. Review images yourself;
+CI only validates files. Keep unreviewed captures outside Git.

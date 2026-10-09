@@ -114,6 +114,35 @@ for Noctalia, CLI and services. The installation manifest records resolved paths
 do not move a live installation between homes without uninstall/reinstall.
 Backups may contain your original app configuration: keep them private.
 
+## Fastfetch and Codex native paths
+
+```sh
+./bin/noctalia-theme-sync plan --adapters fastfetch,codex --experimental
+./bin/noctalia-theme-sync install --adapters fastfetch,codex --experimental
+noctalia msg templates-apply
+```
+
+Select each independently; Fastfetch alone needs no `--experimental`. Requirements:
+Fastfetch >=2.63.1 and Codex >=0.160.1. Codex native theme home uses `CODEX_HOME`,
+default `~/.codex`, rather than XDG. Only its theme file and `tui.theme` are managed;
+credentials, sandbox/models, sessions and pets are outside adapter scope. Non-theme
+Codex preferences may change after install and will be retained during removal.
+
+For an existing custom Fastfetch layout or a wrapped Codex executable, set paths
+before initial install (examples use your actual chosen paths, not literal placeholders):
+
+```sh
+NTS_FASTFETCH_CONFIG="$XDG_CONFIG_HOME/fastfetch/custom.jsonc" ./bin/noctalia-theme-sync plan --adapters fastfetch
+CODEX_HOME="$HOME/.codex" NTS_CODEX_BIN="$(command -v codex)" ./bin/noctalia-theme-sync plan --adapters codex --experimental
+```
+
+Use `${XDG_CONFIG_HOME:-$HOME/.config}` if XDG_CONFIG_HOME is unset. Custom Fastfetch
+config must be within XDG roots. For a VPN/pet wrapper, choose the underlying native
+Codex binary yourself; the CLI does not bypass VPN settings for normal use.
+Native target paths are recorded in the private manifest and reused by Noctalia
+hooks. To change an installed native root, uninstall first and reinstall with the
+new environment. Restart Codex to read a changed `.tmTheme`; rerun Fastfetch.
+
 ## Existing canonical pipeline
 
 If `current.json` is already produced by a trusted local Noctalia v5 publisher:
