@@ -113,6 +113,19 @@ class ProductTests(unittest.TestCase):
         self.assertEqual(self.call('rollback'), 0)
         self.assertEqual(p.read_bytes(), b'-- previous theme\n')
 
+    def test_normal_install_is_not_an_implicit_shadow_opt_in(self):
+        personal = adapters.target('config/nvim/colors/noctalia.lua')
+        xdg.write(personal, b'-- existing rice\n', 0o640)
+        before = self.snapshot()
+        self.assertEqual(self.call('install', '--adapters', 'neovim'), 1)
+        self.assertEqual(self.snapshot(), before)
+        self.install('btop', '--consume-existing')
+        self.assertEqual(personal.read_bytes(), b'-- existing rice\n')
+        self.assertFalse(adapters.target('config/nvim/colors/noctalia-nts.lua').exists())
+        self.assertFalse(adapters.target('config/systemd/user/noctalia-theme-sync-bridge.service').exists())
+        self.assertNotIn('shadow', tx.load())
+        self.assertFalse(tx.load()['bridge'])
+
     def test_partial_disable_independent_adapters(self):
         self.install('kitty,neovim,btop')
         self.assertEqual(self.call('disable', '--adapters', 'neovim'), 0)

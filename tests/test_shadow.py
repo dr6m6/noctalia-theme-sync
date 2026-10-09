@@ -1,9 +1,11 @@
 import base64
+import contextlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import io
 import json
 import os
 from pathlib import Path
+import runpy
 import unittest
 import threading
 from unittest.mock import patch
@@ -111,6 +113,59 @@ class ShadowTests(unittest.TestCase):
             self.assertEqual(self.call('shadow', 'plan', '--root', str(root)), 1)
         self.shadow_root.symlink_to(self.root / 'absent')
         self.assertEqual(self.invoke('install'), 1)
+        self.unchanged()
+
+    def test_xdg_alias_cannot_hide_production_overlap(self):
+        self.prepare()
+        alias = self.root / 'config-alias'
+        alias.symlink_to(xdg.base('config'), target_is_directory=True)
+        with patch.dict(os.environ, {'XDG_CONFIG_HOME': str(alias)}):
+            with self.assertRaises(ValueError):
+                with shadow.context(self.original.parent.parent):
+                    pass
+        self.unchanged()
+
+    def test_root_preempted_after_validation_refuses_output(self):
+        self.prepare()
+        self.assertEqual(self.invoke('plan', '--write-plan', str(self.review)), 0)
+        original = Path.mkdir
+        def preempt(path, *args, **kwargs):
+            if path == self.shadow_root and not path.exists():
+                original(path, mode=0o700)
+                path.chmod(0o755)
+            return original(path, *args, **kwargs)
+        with patch.object(Path, 'mkdir', preempt):
+            self.assertEqual(self.invoke('install', '--from-plan', str(self.review)), 1)
+        self.assertEqual(list(self.shadow_root.iterdir()), [])
+        self.unchanged()
+
+    def test_private_bearer_token_validation_never_leaks_bad_header(self):
+        self.prepare()
+        self.install()
+        token = self.root / 'token'
+        token.write_bytes(b'private-secret\r\nInjected: value')
+        token.chmod(0o600)
+        error = io.StringIO()
+        with contextlib.redirect_stderr(error), contextlib.redirect_stdout(io.StringIO()):
+            from noctalia_theme_sync import cli
+            self.assertEqual(cli.main(['shadow', 'watch', '--root', str(self.shadow_root),
+                                       '--events', 'http://127.0.0.1:8765/v1/events',
+                                       '--token-file', str(token)]), 1)
+        self.assertNotIn('private-secret', error.getvalue())
+        self.assertIn('invalid bearer token', error.getvalue())
+        token.write_bytes(b'valid-token_123=\n')
+        self.assertEqual(shadow.read_token(token), 'valid-token_123=')
+        link = self.root / 'hardlink'
+        os.link(token, link)
+        with self.assertRaises(ValueError):
+            shadow.read_token(token)
+        link.unlink()
+        link.symlink_to(token)
+        with self.assertRaises(ValueError):
+            shadow.read_token(link)
+        token.chmod(0o644)
+        with self.assertRaises(ValueError):
+            shadow.read_token(token)
         self.unchanged()
 
     def test_interrupted_transaction_recovery_preserves_unknown_edits(self):
@@ -250,6 +305,14 @@ class ShadowTests(unittest.TestCase):
         self.assertEqual(self.invoke('apply'), 0)
         with shadow.context(self.shadow_root):
             self.assertNotIn('event', tx.load()['shadow'])
+
+    def test_visual_smoke_refuses_mismatches_and_missing_comparisons(self):
+        script = Path(__file__).resolve().parents[1] / 'scripts/shadow_smoke.py'
+        check = runpy.run_path(str(script))['require_pixel_parity']
+        check([{'pixel_equal': True}])
+        for pairs in ([], [{'pixel_equal': False}], [{'pixel_equal': True}, {}]):
+            with self.assertRaises(ValueError):
+                check(pairs)
 
 
 if __name__ == '__main__':

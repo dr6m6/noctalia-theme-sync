@@ -88,7 +88,9 @@ end, 500)
             if not colors:
                 raise ValueError('expected explicit Normal foreground/background')
             env = dict(os.environ, DISPLAY=':99', KITTY_DISABLE_WAYLAND='1', LIBGL_ALWAYS_SOFTWARE='1',
-                       NTS_THEME=str(theme), NTS_READY=str(ready))
+                       NTS_THEME=str(theme), NTS_READY=str(ready), NVIM_NOTTYFAST='1')
+            # This fixed-background fixture needs no startup terminal queries.
+            # Nvim documents NVIM_NOTTYFAST for slow DSR responses (E1568).
             with (root / (name + '.terminal.log')).open('w') as log:
                 proc = subprocess.Popen(['kitty', '--config', 'NONE', '--title', 'Noctalia shadow proof',
                     '-o', 'font_size=13', '-o', 'remember_window_size=no', '-o', 'initial_window_width=1000',
@@ -127,6 +129,11 @@ end, 500)
         same = ImageChops.difference(first, second).getbbox() is None
         pairs.append({'reference': a.name, 'shadow': b.name, 'pixel_equal': same})
     return pairs
+
+
+def require_pixel_parity(pairs):
+    if not pairs or any(p.get('pixel_equal') is not True for p in pairs):
+        raise ValueError('native screenshot mismatch; inspect retained evidence')
 
 
 def main():
@@ -194,6 +201,8 @@ def main():
     result = {'palettes': records, 'visual': pixels, 'unconverted_canonical': {'exit_code': raw.returncode,
                 'stderr': raw.stderr}, 'rollback': 'passed', 'production_activation': False}
     (root / 'result.json').write_text(json.dumps(result, indent=2))
+    if args.visual:
+        require_pixel_parity(pixels)  # Evidence and rollback precede a failed gate.
     print(json.dumps({'palettes': len(records), 'visual': pixels, 'rollback': 'passed'}))
 
 

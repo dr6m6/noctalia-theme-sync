@@ -6,6 +6,7 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+import re
 import socket
 import stat
 import subprocess
@@ -73,10 +74,9 @@ def context(root):
             raise ValueError('shadow root must not traverse symlinks or files')
     protected = [xdg.base('config') / n for n in ('noctalia', 'nvim')]
     protected += [xdg.canonical(), xdg.state(), xdg.base('data') / 'noctalia-theme-sync/runtime']
-    if any(root.is_relative_to(p) or p.is_relative_to(root) for p in protected):
+    if any(root.resolve().is_relative_to(p.resolve()) or p.resolve().is_relative_to(root.resolve()) for p in protected):
         raise ValueError('shadow root overlaps a production integration')
-    if root.exists() and (root.stat().st_uid != os.getuid() or root.stat().st_mode & 0o077):
-        raise ValueError('existing shadow root must be owned and private (0700)')
+    check_private_root(root)
     values = {'XDG_' + k.upper() + '_HOME': str(root / k) for k in ('config', 'state', 'data', 'cache')}
     values['NTS_BIN_HOME'] = str(root / 'bin')
     previous = {key: os.environ.get(key) for key in values}
@@ -89,6 +89,14 @@ def context(root):
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+
+
+def check_private_root(root):
+    if not root.exists() and not root.is_symlink():
+        return
+    info = root.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ValueError('existing shadow root must be owned and private (0700)')
 
 
 def target():
@@ -197,6 +205,7 @@ def preview(args):
         manifest = str(tx.manifest_path())
     # No normal init/plugins, shada, swaps, user RPC or desktop/session IPC.
     root.mkdir(exist_ok=True, mode=0o700)
+    check_private_root(root)
     with tempfile.TemporaryDirectory(prefix='test-', dir=root) as temporary:
         env = {'PATH': os.environ.get('PATH', ''), 'LANG': 'C.UTF-8', 'TERM': os.environ.get('TERM', 'xterm-256color'),
                'HOME': temporary, 'NTS_SHADOW_OUTPUT': output, 'NTS_SHADOW_MANIFEST': manifest}
@@ -282,10 +291,7 @@ def consume_events(args):
         raise ValueError('max-events must be positive')
     headers = {'Accept': 'text/event-stream'}
     if args.token_file:
-        token = Path(args.token_file)
-        if token.is_symlink() or not token.is_file() or token.stat().st_mode & 0o077 or token.stat().st_size > 4096:
-            raise ValueError('token file must be private, regular and <=4096 bytes')
-        headers['Authorization'] = 'Bearer ' + token.read_text().strip()
+        headers['Authorization'] = 'Bearer ' + read_token(args.token_file)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
     count, delay = 0, 2
     while True:
@@ -320,6 +326,30 @@ def consume_events(args):
         delay = min(delay * 2, 30)
 
 
+def read_token(path):
+    path = Path(path)
+    if not path.is_absolute() or '..' in path.parts or any(p.is_symlink() for p in (path, *path.parents)):
+        raise ValueError('token file must be absolute without symlink ancestors')
+    # Inspect the opened object; do not trust a path stat followed by another open.
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_nlink != 1
+                or info.st_mode & 0o077 or info.st_size > 4096):
+            raise ValueError('token file must be owned, private, regular, not hardlinked and <=4096 bytes')
+        raw = stream.read(4097)
+    if len(raw) > 4096:
+        raise ValueError('token file exceeds 4096 bytes')
+    try:
+        token = raw.decode('ascii').strip()
+    except UnicodeDecodeError:
+        raise ValueError('invalid bearer token format') from None
+    if not re.fullmatch(r'[A-Za-z0-9._~+/-]+=*', token):
+        # HTTP header errors may include the offending value; never pass it on.
+        raise ValueError('invalid bearer token format')
+    return token
+
+
 def dispatch(args):
     # Capture the real canonical read path before entering private XDG roots.
     palette_path = args.palette or str(xdg.canonical() / 'current.json')
@@ -338,6 +368,7 @@ def dispatch(args):
             raise ValueError('shadow install requires checksum-bound --from-plan')
         with context(args.root) as root:
             root.mkdir(exist_ok=True, mode=0o700)
+            check_private_root(root)
             with consumer_lock(create=True), tx.locked():
                 # Read the input again before committing; do not accept palette drift.
                 if source(palette_path)[1] != report['reviewed_plan']['source']:

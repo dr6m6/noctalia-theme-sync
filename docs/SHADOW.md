@@ -97,7 +97,9 @@ separate authorization/deployment decision, not part of shadow install.
 
 Only numeric loopback HTTP `/v1/events` URLs are accepted; queries, URL credentials,
 redirects and HTTP proxies are refused. Optional `--token-file` reads an explicit
-private existing bridge token; no token is created or printed. Frames are capped
+private existing bridge token; no token is created or printed. Token files must
+be absolute, owned, regular, not hardlinked and have no symlink ancestors. Invalid
+bearer header characters are rejected without printing the token. Frames are capped
 at 64 KiB, canonical validation rejects duplicate keys, and event id must match
 revision. Revision regressions/conflicting replays abort while retaining the
 last valid theme. Reconnects use Last-Event-ID and back off 2–30 seconds.
