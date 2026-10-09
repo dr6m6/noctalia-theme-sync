@@ -107,7 +107,9 @@ class ProductTests(unittest.TestCase):
         p = adapters.target('config/nvim/colors/noctalia.lua')
         xdg.write(p, b'-- previous theme\n')
         self.assertEqual(self.call('install', '--adapters', 'neovim'), 1)
-        self.install('neovim', '--adopt-existing')
+        plan = str(self.root / 'reviewed.json')
+        self.assertEqual(self.call('plan', '--adapters', 'neovim', '--adopt-existing', '--write-plan', plan), 0)
+        self.install('neovim', '--adopt-existing', '--from-plan', plan)
         self.assertEqual(self.call('rollback'), 0)
         self.assertEqual(p.read_bytes(), b'-- previous theme\n')
 
@@ -123,10 +125,10 @@ class ProductTests(unittest.TestCase):
         self.install('kitty')
         before = self.snapshot()
         original = xdg.write
-        def fail(path, data, mode=0o600):
+        def fail(path, data, mode=0o600, **kwargs):
             if str(path).endswith('kitty/kitty.conf') and data == b'new\n':
                 raise OSError('injected failure')
-            return original(path, data, mode)
+            return original(path, data, mode, **kwargs)
         with patch('noctalia_theme_sync.xdg.write', side_effect=fail):
             with self.assertRaises(OSError):
                 tx.commit(tx.load(), {str(adapters.target('config/kitty/themes/noctalia-theme-sync.conf')): b'changed\n', str(adapters.target('config/kitty/kitty.conf')): b'new\n'})
