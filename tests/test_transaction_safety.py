@@ -84,3 +84,18 @@ class TransactionSafetyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             tx.recover()
         self.assertEqual(tx.manifest_path().read_bytes(), b'[]')
+
+    def test_manifest_drift_during_preflight_preserves_foreign_state(self):
+        m = tx.load()
+        p = str(xdg.base('config') / 'output')
+        original = tx.check
+        def changed(manifest, path):
+            value = original(manifest, path)
+            xdg.write(tx.manifest_path(), b'foreign')
+            return value
+        with patch.object(tx, 'check', side_effect=changed):
+            with self.assertRaises(ValueError):
+                tx.commit(m, {p: b'new'})
+        self.assertFalse(Path(p).exists())
+        self.assertFalse((xdg.state() / 'pending.json').exists())
+        self.assertEqual(tx.manifest_path().read_bytes(), b'foreign')

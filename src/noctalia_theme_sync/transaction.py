@@ -107,6 +107,8 @@ def commit(m, changes, registrations=None, modes=None, forget=(), expected=None)
     old_manifest_signature = xdg.signature(manifest_path())
     if old_manifest_signature['sha256'] != xdg.digest(old_manifest):
         raise ValueError('manifest changed before journal')
+    if getattr(m, 'signature', None) is not None and old_manifest_signature != m.signature:
+        raise ValueError('manifest changed during transaction preflight')
     journal = {'version': 2, 'before': snapshots,
                'after': {p: xdg.digest(changes.get(p, decode(v['data']))) for p, v in snapshots.items()},
                'after_modes': {p: modes.get(p, v['mode']) if changes.get(p, decode(v['data'])) is not None else None

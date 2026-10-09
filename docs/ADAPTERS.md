@@ -26,6 +26,10 @@ native notification; it still needs the app-side activation/dependencies.
 
 ## Activation
 
+Existing Neovim integrations can be previewed independently with
+[Shadow Mode](SHADOW.md). It retains the personal output and theme selection;
+the distinct `noctalia-nts` identity is used only in the opt-in trial.
+
 - **Fastfetch:** the default `config.jsonc` (or existing `config.json`) is edited
   surgically. An absent config gets a minimal color-only config, leaving native
   default modules intact. `NTS_FASTFETCH_CONFIG` selects an existing custom JSONC

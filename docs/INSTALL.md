@@ -146,6 +146,11 @@ new environment. Restart Codex to read a changed `.tmTheme`; rerun Fastfetch.
 
 ## Existing canonical pipeline
 
+For an existing personal Neovim writer, prefer [Shadow Mode](SHADOW.md): it
+renders a separate private output without disabling the old writer or editing
+Noctalia config. Its optional foreground consumer uses the existing SSE bridge.
+The ordinary installation below still rejects existing writer conflicts.
+
 If `current.json` is already produced by a trusted local Noctalia v5 publisher:
 
 ```sh
