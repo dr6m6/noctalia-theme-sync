@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import re
-import stat
 import tomllib
 
 from . import adapters, transaction as tx, xdg
@@ -48,7 +47,10 @@ def inventory(selected, consume=False):
                 outputs = [outputs] if isinstance(outputs, str) else outputs
                 if not isinstance(outputs, list) or not all(isinstance(v, str) for v in outputs):
                     raise ValueError('invalid user output_path')
-                resolved = [expand(v) for v in outputs]
+                expanded = [expand(v) for v in outputs]
+                if any(not Path(v).is_absolute() or '$' in v for v in expanded):
+                    raise ValueError('output path must be absolute with known variables')
+                resolved = [str(Path(v).resolve()) for v in expanded]
                 writer = {'file': str(path), 'key': key, 'input': entry.get('input_path'), 'outputs': resolved}
                 writers.append(writer)
                 if any(p in resolved for p in (str(xdg.canonical() / 'palette.json'), str(xdg.canonical() / 'current.json'))):
@@ -79,10 +81,7 @@ def inventory(selected, consume=False):
 
 
 def signature(path):
-    raw = xdg.read(path)
-    if raw is None:
-        return {'sha256': None, 'mode': None}
-    return {'sha256': xdg.digest(raw), 'mode': stat.S_IMODE(Path(path).stat().st_mode)}
+    return xdg.signature(path)
 
 
 def bind(report, changes, registrations):

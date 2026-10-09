@@ -150,6 +150,14 @@ class AdoptionTests(unittest.TestCase):
         self.assertEqual(self.call('install', '--adapters', 'neovim', '--consume-existing'), 1)
         self.assertEqual(self.snapshot(), before)
 
+    def test_publisher_path_alias_and_unknown_relative_output(self):
+        p = xdg.base('config') / 'noctalia/local.toml'
+        alias = str(xdg.canonical() / '../theme-sync/palette.json')
+        p.write_text('[theme.templates.user.export]\noutput_path="' + alias + '"\n')
+        self.assertEqual(len(adoption.inventory([], True)['publishers']), 1)
+        p.write_text('[theme.templates.user.export]\noutput_path="relative/output"\n')
+        self.assertTrue(adoption.inventory([], True)['blockers'])
+
     def test_pending_journal_is_a_plan_blocker(self):
         xdg.write(xdg.state() / 'pending.json', b'{}')
         before = self.snapshot()

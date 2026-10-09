@@ -65,11 +65,30 @@ def read(path):
     return path.read_bytes()
 
 
-def write(path, data, mode=0o600):
+def signature(path):
+    raw = read(path)
+    return {'sha256': digest(raw), 'mode': stat.S_IMODE(Path(path).stat().st_mode) if raw is not None else None}
+
+
+def sync_directory(path):
+    directory = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
+
+def write(path, data, mode=0o600, expected=None):
     path = safe(path)
+    def unchanged():
+        if expected is not None and signature(path) != expected:
+            raise ValueError('configuration changed before atomic write: ' + str(path))
+    unchanged()
     if data is None:
         if path.exists():
+            unchanged()
             path.unlink()
+            sync_directory(path.parent)
         return
     if read(path) == data and stat.S_IMODE(path.stat().st_mode) == mode:
         return
@@ -82,12 +101,9 @@ def write(path, data, mode=0o600):
             stream.flush()
             os.fsync(stream.fileno())
         safe(path)
+        unchanged()
         os.replace(temporary, path)
-        directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
+        sync_directory(path.parent)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
